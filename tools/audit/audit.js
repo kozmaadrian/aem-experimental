@@ -511,11 +511,9 @@ if (!customElements.get(EL_NAME)) {
  */
 export default async function init(el) {
   el.replaceChildren();
-  const { context, token } = await DA_SDK;
+  const { token } = await DA_SDK;
   const cmp = document.createElement(EL_NAME);
   cmp._token = token;
-  cmp._org = context?.org || context?.owner || '';
-  cmp._site = context?.site || context?.repo || '';
   el.append(cmp);
 }
 

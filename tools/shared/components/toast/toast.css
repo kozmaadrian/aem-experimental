@@ -1,0 +1,115 @@
+:host {
+  display: block;
+  box-sizing: border-box;
+  /* Wide enough for a sentence + link on 1–2 lines; still safe on small viewports */
+  max-width: min(42rem, min(92vw, calc(100vw - 2rem)));
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font-family: var(
+    --s2-font-family,
+    adobe-clean,
+    "Source Sans Pro",
+    system-ui,
+    sans-serif
+  );
+}
+
+.toast {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: var(--s2-spacing-100, 8px);
+  padding: var(--s2-spacing-200, 12px) var(--s2-spacing-300, 16px);
+  border-radius: var(--s2-corner-radius-200, 8px);
+  border: 1px solid;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 12%);
+
+  &.toast-success {
+    border-color: var(--s2-green-800, #007a4d);
+    background: var(--s2-green-900, #00653e);
+    color: var(--s2-gray-25, #fff);
+  }
+
+  &.toast-error {
+    border-color: var(--s2-red-900, #ae1d1d);
+    background: var(--s2-red-900, #ae1d1d);
+    color: var(--s2-gray-25, #fff);
+  }
+
+  &.toast-warning {
+    border-color: var(--s2-orange-800, #cb6f10);
+    background: var(--s2-orange-900, #a75d0b);
+    color: var(--s2-gray-25, #fff);
+  }
+
+  &.toast-info {
+    border-color: var(--s2-blue-900, #0265dc);
+    background: var(--s2-blue-900, #0265dc);
+    color: var(--s2-gray-25, #fff);
+  }
+
+  & .toast__body {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  & .toast__text {
+    margin: 0;
+    padding: 0;
+    font-size: var(--s2-component-m-medium-font-size, 14px);
+    line-height: var(--s2-component-m-medium-line-height, 1.4);
+    overflow-wrap: break-word;
+    white-space: pre-line;
+  }
+
+  & .toast__action {
+    margin: var(--s2-spacing-75, 6px) 0 0;
+    padding: 0;
+    font-size: var(--s2-component-s-medium-font-size, 13px);
+    line-height: var(--s2-component-s-medium-line-height, 1.35);
+  }
+
+  & .toast__action a {
+    color: inherit;
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  & .toast__action a:hover {
+    text-decoration-thickness: 2px;
+  }
+
+  & .toast__close {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    padding: var(--s2-spacing-50, 4px);
+    border: none;
+    border-radius: var(--s2-corner-radius-75, 4px);
+    font: inherit;
+    line-height: 0;
+    cursor: pointer;
+    color: inherit;
+    background: transparent;
+    opacity: 0.85;
+  }
+
+  & .toast__close:hover {
+    opacity: 1;
+  }
+
+  & .toast__close:focus-visible {
+    outline: 2px solid var(--s2-gray-25, #fff);
+    outline-offset: 2px;
+  }
+
+  & .toast__close-icon {
+    display: block;
+    flex-shrink: 0;
+  }
+}

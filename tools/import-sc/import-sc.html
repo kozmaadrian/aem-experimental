@@ -1,0 +1,55 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Import Structured Content</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="/tools/shared/styles/spectrum-tokens.css" />
+    <script type="importmap">
+      { "imports": { "da-lit": "/deps/lit/dist/index.js" } }
+    </script>
+    <script
+      src="/tools/shared/components/tool-shell/tool-shell.js"
+      type="module"
+    ></script>
+    <!-- Import DA App SDK -->
+    <script src="https://da.live/nx/utils/sdk.js" type="module"></script>
+    <!-- App Styles (document-level; component shadow uses getStyle + tool-base) -->
+    <link rel="stylesheet" href="/tools/import-sc/import-sc.css" />
+    <!-- Project App Logic -->
+    <script src="/tools/import-sc/import-sc.js" type="module"></script>
+    <style>
+      html {
+        min-height: 100%;
+        background: var(--s2-gray-25);
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        color: var(--s2-gray-900);
+        font-family:
+          adobe-clean,
+          "Source Sans Pro",
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          ui-sans-serif,
+          system-ui,
+          sans-serif;
+        background: var(--s2-gray-25);
+      }
+
+      main {
+        display: block;
+        min-height: 100vh;
+      }
+    </style>
+  </head>
+
+  <body>
+    <tool-shell badge="experimental" title="Import Structured Content">
+      <main></main>
+    </tool-shell>
+  </body>
+</html>

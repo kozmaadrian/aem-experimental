@@ -1,0 +1,37 @@
+/**
+ * experimental-badge shadow styles.
+ */
+
+:host {
+  display: inline-block;
+  pointer-events: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--s2-orange-1000, #b45309);
+  font: var(--s2-component-s-medium-font-weight, 500)
+    var(--s2-component-s-medium-font-size, 12px) /
+    var(--s2-component-s-medium-line-height, 16px)
+    adobe-clean, "Source Sans Pro", ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  backdrop-filter: none;
+
+  & .icon {
+    width: 14px;
+    height: 14px;
+    display: block;
+    flex: 0 0 auto;
+  }
+}

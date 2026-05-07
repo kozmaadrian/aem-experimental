@@ -1,0 +1,63 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Audit Explorer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="/tools/shared/styles/spectrum-tokens.css" />
+    <script type="importmap">
+      { "imports": { "da-lit": "/deps/lit/dist/index.js" } }
+    </script>
+    <script src="https://da.live/nx/utils/sdk.js" type="module"></script>
+    <script src="/tools/shared/components/tool-shell/tool-shell.js" type="module"></script>
+    <link rel="stylesheet" href="/tools/audit/audit.css" />
+    <script src="/tools/audit/audit.js" type="module"></script>
+    <style>
+      /* Solid surfaces (no backdrop-filter) — avoids blurry / pixelated compositing in iframe + GPU paths */
+      html {
+        height: 100%;
+        background: var(--s2-gray-25);
+      }
+
+      body {
+        margin: 0;
+        height: 100%;
+        min-height: 100%;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        color: var(--s2-gray-900);
+        font-family: adobe-clean, "Source Sans Pro", ui-sans-serif, system-ui,
+          sans-serif;
+        background: var(--s2-gray-25);
+      }
+
+      tool-shell {
+        flex: 1 1 auto;
+        min-height: 0;
+      }
+
+      main {
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 auto;
+        min-height: 0;
+      }
+
+      main > content-audit {
+        flex: 1 1 auto;
+        min-height: 0;
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <tool-shell
+      badge="experimental"
+      title="Audit Explorer"
+      subtitle="Find a document and inspect history and compare versions."
+    >
+      <main></main>
+    </tool-shell>
+  </body>
+</html>

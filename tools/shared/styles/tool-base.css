@@ -1,0 +1,262 @@
+/**
+ * Shared baseline for tools — uses Adobe Spectrum 2 tokens from spectrum-tokens.css.
+ * Load spectrum-tokens.css on the page (:root) before adopted stylesheets / app CSS.
+ */
+
+:host {
+  --tool-font-family:
+    adobe-clean,
+    "Source Sans Pro",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    ui-sans-serif,
+    system-ui,
+    sans-serif;
+
+  /*
+   * Shared field height (audit + inputs). Not a token alias — encodes medium textfield metrics.
+   */
+  --tool-control-height: calc(
+    var(--s2-component-m-regular-line-height)
+    + (2 * var(--s2-base-padding-vertical-medium))
+    + 2px
+  );
+
+  color: var(--s2-gray-900);
+}
+
+:host,
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  font-family: var(--tool-font-family);
+}
+
+/* Form controls — sp-textfield-like neutral borders (gray-400 → 600 hover → 800 focus) */
+input[type="text"],
+input[type="url"],
+input[type="datetime-local"],
+select,
+.field {
+  height: var(--tool-control-height);
+  min-height: var(--tool-control-height);
+  padding: var(--s2-base-padding-vertical-medium)
+    var(--s2-base-padding-horizontal-medium);
+  border-radius: var(--s2-corner-radius-100);
+  border: 1px solid var(--s2-gray-400);
+  background: var(--s2-gray-25);
+  color: var(--s2-gray-900);
+  /* UA `input` / `select` use element selector — beats `*`; must set explicitly */
+  font-family: var(--tool-font-family);
+  font-size: var(--s2-component-m-regular-font-size);
+  line-height: var(--s2-component-m-regular-line-height);
+  font-weight: var(--s2-component-m-regular-font-weight);
+  outline: none;
+  width: 100%;
+  min-width: 0;
+  appearance: none;
+  transition:
+    border-color 0.13s ease-in-out,
+    color 0.13s ease-in-out,
+    background-color 0.13s ease-in-out,
+    box-shadow 0.13s ease-in-out;
+}
+
+input::placeholder,
+.field::placeholder {
+  color: var(--s2-gray-500);
+  opacity: 1;
+}
+
+input:hover,
+select:hover,
+.field:hover {
+  border-color: var(--s2-gray-600);
+}
+
+input:focus,
+select:focus,
+.field:focus {
+  border-color: var(--s2-gray-800);
+  outline: none;
+}
+
+input:focus:not(:focus-visible),
+select:focus:not(:focus-visible),
+.field:focus:not(:focus-visible) {
+  box-shadow: none;
+}
+
+/*
+ * Keyboard / focus-visible: inset ring so the blue indicator is not clipped by
+ * ancestors with overflow:hidden (e.g. audit shell + sticky header).
+ */
+input:focus-visible,
+select:focus-visible,
+.field:focus-visible {
+  border-color: var(--s2-gray-800);
+  box-shadow: inset 0 0 0 2px var(--s2-blue-400);
+}
+
+input:disabled,
+select:disabled,
+.field:disabled {
+  opacity: 1;
+  cursor: not-allowed;
+  background: var(--s2-gray-25);
+  border-color: var(--s2-gray-300);
+  color: var(--s2-gray-500);
+  box-shadow: none;
+}
+
+input:disabled::placeholder,
+.field:disabled::placeholder {
+  color: var(--s2-gray-500);
+}
+
+/*
+ * Field captions — Spectrum s-medium; shared by .field-label, switch captions, and
+ * form <label> in tools that adopt this sheet.
+ */
+.field-label,
+.switch-label,
+label {
+  font-size: var(--s2-component-s-medium-font-size);
+  line-height: var(--s2-component-s-medium-line-height);
+  font-weight: var(--s2-component-s-medium-font-weight);
+  color: var(--s2-gray-900);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Buttons — match Spectrum CSS .spectrum-Button (sp-button): pill, bold label, 2px border */
+.btn,
+button {
+  font: inherit;
+}
+
+.btn {
+  /* Medium SWC button: line + padding×2 + 2px border×2 */
+  --btn-height: calc(
+    var(--s2-component-m-bold-line-height)
+    + (2 * var(--s2-base-padding-vertical-medium))
+    + 4px
+  );
+  height: var(--btn-height);
+  min-height: var(--btn-height);
+  padding-block: 0;
+  padding-inline: var(--s2-spacing-300);
+  border-radius: calc(var(--btn-height) / 2);
+  border-width: 2px;
+  border-style: solid;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2-spacing-75);
+  font-size: var(--s2-component-m-bold-font-size);
+  line-height: var(--s2-component-m-bold-line-height);
+  font-weight: var(--s2-component-m-bold-font-weight);
+  text-transform: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  user-select: none;
+  vertical-align: top;
+  transition:
+    border-color 0.13s linear,
+    color 0.13s linear,
+    background-color 0.13s linear,
+    box-shadow 0.13s linear;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--s2-blue-400);
+}
+
+button:focus-visible:not(.btn),
+a:focus-visible {
+  outline: 2px solid var(--s2-blue-800);
+  outline-offset: 2px;
+}
+
+@media (hover: hover) {
+  .btn:hover:not(:disabled):not(:focus-visible) {
+    box-shadow: none;
+  }
+}
+
+button:disabled:not(.btn) {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.btn:disabled {
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* CTA: <sp-button variant="accent" treatment="fill"> */
+.btn-primary {
+  background-color: var(--s2-blue-800);
+  color: var(--s2-gray-25);
+  border-color: transparent;
+}
+
+@media (hover: hover) {
+  .btn-primary:hover:not(:disabled) {
+    background-color: var(--s2-blue-900);
+  }
+}
+
+.btn-primary:active:not(:disabled) {
+  background-color: var(--s2-blue-1000);
+}
+
+.btn-primary:disabled {
+  background-color: var(--s2-gray-200);
+  border-color: transparent;
+  color: var(--s2-gray-500);
+  opacity: 0.55;
+}
+
+/*
+ * Secondary outline: <sp-button variant="secondary" treatment="outline">
+ * (transparent default fill; gray border — not filled gray-25).
+ */
+.btn-secondary {
+  background-color: transparent;
+  color: var(--s2-gray-900);
+  border-color: var(--s2-gray-300);
+}
+
+@media (hover: hover) {
+  .btn-secondary:hover:not(:disabled) {
+    background-color: var(--s2-gray-100);
+    border-color: var(--s2-gray-400);
+  }
+}
+
+.btn-secondary:active:not(:disabled) {
+  background-color: var(--s2-gray-200);
+  border-color: var(--s2-gray-500);
+}
+
+.btn-secondary:disabled {
+  background-color: transparent;
+  color: var(--s2-gray-500);
+  border-color: var(--s2-gray-200);
+  opacity: 0.65;
+}
+
+.tool-icon {
+  width: var(--s2-spacing-300);
+  height: var(--s2-spacing-300);
+  display: block;
+  flex: 0 0 auto;
+}

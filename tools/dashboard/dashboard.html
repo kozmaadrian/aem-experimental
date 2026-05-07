@@ -1,0 +1,159 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Tools Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="/tools/shared/styles/spectrum-tokens.css" />
+    <link rel="stylesheet" href="/tools/shared/styles/tool-base.css" />
+    <script
+      src="/tools/shared/components/tool-shell/tool-shell.js"
+      type="module"
+    ></script>
+    <link rel="stylesheet" href="/tools/dashboard/dashboard.css" />
+    <script src="/tools/dashboard/dashboard.js" type="module"></script>
+  </head>
+
+  <body>
+    <tool-shell
+      class="tool-shell--dashboard"
+      title="Tools"
+      subtitle="Custom experimental apps for DA / EDS workflows—they are not part of the core product, ship as-is, and come with no roadmap, SLA, or support commitment. Use them to explore ideas; behavior and availability may change at any time."
+    >
+      <main class="dashboard">
+        <section class="dashboard__grid" aria-label="Available tools">
+          <article class="spectrum-card">
+            <div class="spectrum-card__media" aria-hidden="true">
+              <svg
+                class="spectrum-card__art"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 400 220"
+                fill="none"
+              >
+                <rect width="400" height="220" fill="url(#dash-grad-import)" />
+                <path
+                  fill="var(--s2-blue-900, #0265dc)"
+                  fill-opacity=".12"
+                  d="M0 0h400v220H0z"
+                />
+                <path
+                  stroke="var(--s2-blue-800, #0265dc)"
+                  stroke-width="3"
+                  stroke-linecap="round"
+                  d="M72 76h256M72 110h200M72 144h256"
+                />
+                <rect
+                  x="88"
+                  y="168"
+                  width="224"
+                  height="36"
+                  rx="8"
+                  fill="var(--s2-gray-25, #fff)"
+                  stroke="var(--s2-blue-800, #0265dc)"
+                  stroke-width="2"
+                />
+                <path
+                  fill="var(--s2-blue-800, #0265dc)"
+                  d="M108 184h8v8h-8zm20-4h72v16h-72zm96 0h56v16h-56z"
+                />
+                <defs>
+                  <linearGradient
+                    id="dash-grad-import"
+                    x1="0"
+                    y1="0"
+                    x2="400"
+                    y2="220"
+                    gradientUnits="userSpaceOnUse"
+                  >
+                    <stop stop-color="var(--s2-blue-100, #d9eeff)" />
+                    <stop offset="1" stop-color="var(--s2-gray-100, #f1f3f5)" />
+                  </linearGradient>
+                </defs>
+              </svg>
+            </div>
+            <div class="spectrum-card__body">
+              <h2 class="spectrum-card__heading">Import Structured Content</h2>
+              <p class="spectrum-card__description">
+                Validate JSON against a schema and import structured content
+                into DA.
+              </p>
+              <div class="spectrum-card__footer">
+                <a
+                  class="btn btn-primary spectrum-card__cta"
+                  href="import-sc/import-sc"
+                  target="_top"
+                  rel="noopener"
+                >
+                  Try it
+                </a>
+              </div>
+            </div>
+          </article>
+
+          <article class="spectrum-card">
+            <div class="spectrum-card__media" aria-hidden="true">
+              <svg
+                class="spectrum-card__art"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 400 220"
+                fill="none"
+              >
+                <rect width="400" height="220" fill="url(#dash-grad-audit)" />
+                <path
+                  stroke="var(--s2-seafoam-1000, #0c6c5a)"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  d="M64 156V84l48-24v96M136 156V68l48 28v60M208 156V96l48-20v80M280 156v-72l48 36v36"
+                />
+                <circle
+                  cx="200"
+                  cy="52"
+                  r="22"
+                  stroke="var(--s2-seafoam-900, #07816d)"
+                  stroke-width="3"
+                  fill="var(--s2-gray-25, #fff)"
+                />
+                <path
+                  stroke="var(--s2-seafoam-900, #07816d)"
+                  stroke-width="3"
+                  stroke-linecap="round"
+                  d="M192 52h16M200 44v16"
+                />
+                <defs>
+                  <linearGradient
+                    id="dash-grad-audit"
+                    x1="0"
+                    y1="0"
+                    x2="400"
+                    y2="220"
+                    gradientUnits="userSpaceOnUse"
+                  >
+                    <stop stop-color="var(--s2-seafoam-100, #ebfbf6)" />
+                    <stop offset="1" stop-color="var(--s2-gray-100, #f1f3f5)" />
+                  </linearGradient>
+                </defs>
+              </svg>
+            </div>
+            <div class="spectrum-card__body">
+              <h2 class="spectrum-card__heading">Audit Explorer</h2>
+              <p class="spectrum-card__description">
+                Search paths, inspect audit timelines, and compare document
+                versions.
+              </p>
+              <div class="spectrum-card__footer">
+                <a
+                  class="btn btn-primary spectrum-card__cta"
+                  href="audit/audit"
+                  target="_top"
+                  rel="noopener"
+                >
+                  Try it
+                </a>
+              </div>
+            </div>
+          </article>
+        </section>
+      </main>
+    </tool-shell>
+  </body>
+</html>

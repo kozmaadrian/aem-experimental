@@ -17,7 +17,7 @@ import {
   buildAuditPayload,
   createLoadingAuditState,
 } from './lib/audit-timeline.js';
-import { renderProgressRing } from './components/audit-progress-ring.js';
+import { iconProgressCircle } from '../shared/components/icons/icons.js';
 import './components/audit-search-header.js';
 import './components/audit-workspace.js';
 import './components/audit-diff-dialog.js';
@@ -406,7 +406,7 @@ class ContentAudit extends LitElement {
       <div class="audit-empty-layout search-loading" role="status" aria-live="polite" aria-busy="true">
         <div class="empty-card">
           <div class="audit-detail-state">
-            <div class="audit-detail-state__figure">${renderProgressRing()}</div>
+            <div class="audit-detail-state__figure">${iconProgressCircle()}</div>
             <p class="audit-detail-state__message audit-detail-state__message--loading">
               Searching content paths...
             </p>

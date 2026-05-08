@@ -1,6 +1,6 @@
 import { html, LitElement } from 'https://da.live/nx/deps/lit/lit-core.min.js';
 import { pathForDisplay } from '../lib/audit-formatters.js';
-import { renderProgressRing } from './audit-progress-ring.js';
+import { iconProgressCircle } from '../../shared/components/icons/icons.js';
 import './audit-timeline.js';
 
 const EL_NAME = 'audit-detail-panel';
@@ -44,7 +44,7 @@ class AuditDetailPanel extends LitElement {
       >
         <div class="empty-card">
           <div class="audit-detail-state">
-            <div class="audit-detail-state__figure">${renderProgressRing()}</div>
+            <div class="audit-detail-state__figure">${iconProgressCircle()}</div>
             <p class="audit-detail-state__message audit-detail-state__message--loading">
               Loading audit for <code>${pathForDisplay(this.selectedPath)}</code>...
             </p>

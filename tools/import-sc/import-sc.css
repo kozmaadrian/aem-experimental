@@ -57,6 +57,26 @@ label::after {
     font-weight: 700;
 }
 
+.field-help {
+    margin: 6px 0 0;
+    font-size: 12px;
+    line-height: 1.3;
+    color: var(--s2-gray-700, #334155);
+}
+
+.field-help--warning {
+    color: var(--s2-red-900, #7f1d1d);
+}
+
+.field-help__link {
+    color: var(--s2-blue-800, #1d4ed8);
+    text-decoration: underline;
+}
+
+.field-help__link:hover {
+    color: var(--s2-blue-900, #1e3a8a);
+}
+
 /* JSON Editor (CodeMirror) - Following schema-editor pattern */
 .json-editor {
     border: 1px solid var(--s2-gray-300);

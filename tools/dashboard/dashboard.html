@@ -1,7 +1,7 @@
 <!doctype html>
 <html>
   <head>
-    <title>Tools Dashboard</title>
+    <title>Experimental Apps</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" href="data:," />
     <link rel="stylesheet" href="/tools/shared/styles/spectrum-tokens.css" />
@@ -10,17 +10,23 @@
       src="/tools/shared/components/tool-shell/tool-shell.js"
       type="module"
     ></script>
+    <script
+      src="/tools/shared/components/alert-banner/alert-banner.js"
+      type="module"
+    ></script>
     <link rel="stylesheet" href="/tools/dashboard/dashboard.css" />
     <script src="/tools/dashboard/dashboard.js" type="module"></script>
   </head>
 
   <body>
-    <tool-shell
-      class="tool-shell--dashboard"
-      title="Tools"
-      subtitle="Custom experimental apps for DA / EDS workflows—they are not part of the core product, ship as-is, and come with no roadmap, SLA, or support commitment. Use them to explore ideas; behavior and availability may change at any time."
-    >
+    <tool-shell class="tool-shell--dashboard" title="Experimental Apps">
       <main class="dashboard">
+        <tool-alert-banner class="dashboard__banner" variant="info" open>
+          Custom experimental apps for DA/EDS. These apps are not part of the
+          core product and come with no roadmap, SLA, or support commitment. Use
+          them to explore ideas. Behavior and availability may change at any
+          time.
+        </tool-alert-banner>
         <section class="dashboard__grid" aria-label="Available tools">
           <article class="spectrum-card">
             <div class="spectrum-card__media" aria-hidden="true">
@@ -137,8 +143,7 @@
             <div class="spectrum-card__body">
               <h2 class="spectrum-card__heading">Audit Explorer</h2>
               <p class="spectrum-card__description">
-                Search paths, inspect audit timelines, and compare document
-                versions.
+                Search for a document, review its history, and compare versions.
               </p>
               <div class="spectrum-card__footer">
                 <a

@@ -8,7 +8,12 @@ import {
   parseTimestamp,
   pathForDisplay,
 } from '../lib/audit-formatters.js';
-import { renderProgressRing } from './audit-progress-ring.js';
+import {
+  iconChevronDown,
+  iconChevronUp,
+  iconCloseSmall,
+  iconProgressCircle,
+} from '../../shared/components/icons/icons.js';
 
 const EL_NAME = 'audit-diff-dialog';
 const DIFF_CDN_URL = 'https://cdn.jsdelivr.net/npm/diff@9.0.0/dist/diff.min.js';
@@ -547,67 +552,22 @@ class AuditDiffDialog extends LitElement {
   }
 
   renderDialogCloseIcon() {
-    return html`
-      <svg
-        class="icon-tool-trigger__icon"
-        width="16"
-        height="16"
-        viewBox="0 0 16 16"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        aria-hidden="true"
-      >
-        <path
-          fill="currentColor"
-          d="M3.72 3.72A.75.75 0 0 1 4.78 3.72L8 6.94L11.22 3.72A.75.75 0 1 1 12.28 4.78L9.06 8L12.28 11.22A.75.75 0 1 1 11.22 12.28L8 9.06L4.78 12.28A.75.75 0 1 1 3.72 11.22L6.94 8L3.72 4.78A.75.75 0 0 1 3.72 3.72Z"
-        />
-      </svg>
-    `;
+    return iconCloseSmall({ className: 'icon-tool-trigger__icon' });
   }
 
   renderStepIcon(direction) {
     if (direction === 'up') {
-      return html`
-        <svg
-          class="icon-tool-trigger__icon"
-          width="20"
-          height="20"
-          viewBox="0 0 20 20"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          aria-hidden="true"
-        >
-          <path
-            fill="#292929"
-            d="M3.54492 12.2373C3.54492 12.041 3.62207 11.8437 3.77539 11.6973L9.47851 6.20996C9.76855 5.92969 10.2275 5.92969 10.5176 6.20996L16.2344 11.71C16.5332 11.9971 16.542 12.4727 16.2549 12.7695C15.9678 13.0684 15.4932 13.0781 15.1953 12.79L9.99804 7.79102L4.81445 12.7773C4.5166 13.0654 4.04199 13.0557 3.75488 12.7568C3.61426 12.6123 3.54492 12.4248 3.54492 12.2373Z"
-          />
-        </svg>
-      `;
+      return iconChevronUp({ className: 'icon-tool-trigger__icon' });
     }
 
-    return html`
-      <svg
-        class="icon-tool-trigger__icon"
-        width="20"
-        height="20"
-        viewBox="0 0 20 20"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        aria-hidden="true"
-      >
-        <path
-          fill="#292929"
-          d="M3.75488 7.24315C4.04199 6.94432 4.5166 6.93455 4.81445 7.22264L9.99804 12.209L15.1953 7.20995C15.4932 6.92187 15.9678 6.93163 16.2549 7.23046C16.542 7.52733 16.5332 8.00292 16.2344 8.29003L10.5176 13.79C10.2275 14.0703 9.76855 14.0703 9.47851 13.79L3.77539 8.30273C3.62207 8.15624 3.54492 7.95898 3.54492 7.76269C3.54492 7.57518 3.61426 7.38768 3.75488 7.24315Z"
-        />
-      </svg>
-    `;
+    return iconChevronDown({ className: 'icon-tool-trigger__icon' });
   }
 
   renderDiffBody() {
     if (this._isDiffLoading) {
       return html`
         <div class="audit-diff-state" role="status" aria-live="polite" aria-busy="true">
-          <div class="audit-detail-state__figure">${renderProgressRing()}</div>
+          <div class="audit-detail-state__figure">${iconProgressCircle()}</div>
           <p class="audit-detail-state__message audit-detail-state__message--loading">
             Loading diff...
           </p>

@@ -5,7 +5,7 @@ import { debounce } from './utils/helpers.js';
 import { validateAgainstSchema } from './utils/validators.js';
 import { serialise } from 'https://fix-reusable-serialiser--da-nx--adobe.aem.live/nx/blocks/form/utils/serialise.js';
 import { loadSchemas, fetchSchema, importToDA } from './utils/api.js';
-import { dismissToastByDedupeKey, showToast } from '../shared/components/toast/toast.js';
+import { showToast } from '../shared/components/toast/toast.js';
 
 // Import CodeMirror
 import { EditorState } from 'https://esm.sh/@codemirror/state@6';
@@ -32,20 +32,9 @@ const NOTIFY_VARIANT = {
   info: 'info',
 };
 
-/** Stable keys for toast deduplication (same outcome class, not org/site/message text). */
-const IMPORT_TOAST_KEY = {
-  SCHEMAS_EMPTY: 'import:schemas-empty',
-  SCHEMAS_LOAD_FAILED: 'import:schemas-load-failed',
-  VALIDATE_PROGRESS: 'import:validate-progress',
-  VALIDATE_SCHEMA_ERRORS: 'import:validate-schema-errors',
-  VALIDATE_SIMPLE_ERROR: 'import:validate-simple-error',
-  IMPORT_PROGRESS: 'import:import-progress',
-  IMPORT_FAILED: 'import:import-failed',
-};
-
-/** @param {{ type: string, message: string, errors?: object[], link?: { url: string, text: string }, toastKey?: string }} payload */
+/** @param {{ type: string, message: string, errors?: object[], link?: { url: string, text: string } }} payload */
 function notifyImport(payload) {
-  const { type, message, errors, link, toastKey } = payload;
+  const { type, message, errors, link } = payload;
   let text = message || '';
   if (errors?.length) {
     text += `\n${errors.map((e) => `${e.path}: ${e.message}`).join('\n')}`;
@@ -54,7 +43,6 @@ function notifyImport(payload) {
     message: text,
     variant: NOTIFY_VARIANT[type] || 'info',
     link: link?.url && link?.text ? link : null,
-    dedupeKey: toastKey,
   });
 }
 
@@ -71,6 +59,8 @@ class ImportStructuredContent extends LitElement {
     _site: { state: true },
     _documentPath: { state: true },
     _schemaName: { state: true },
+    _schemasLoaded: { state: true },
+    _schemasLoadError: { state: true },
   };
 
   constructor() {
@@ -81,9 +71,22 @@ class ImportStructuredContent extends LitElement {
     this._site = '';
     this._documentPath = '';
     this._schemaName = '';
+    this._schemasLoaded = false;
+    this._schemasLoadError = '';
 
     // Create debounced schema loader (500ms delay)
     this.debouncedLoadSchemas = debounce(() => this.loadSchemas(), 500);
+  }
+
+  /**
+   * Returns the DA Schema editor URL, optionally scoped to org/site.
+   * @returns {string}
+   */
+  get schemaEditorUrl() {
+    const org = (this._org || '').trim();
+    const site = (this._site || '').trim();
+    if (!org || !site) return 'https://da.live/apps/schema';
+    return `https://da.live/apps/schema#/${encodeURIComponent(org)}/${encodeURIComponent(site)}`;
   }
 
   connectedCallback() {
@@ -105,30 +108,23 @@ class ImportStructuredContent extends LitElement {
    * Updates component state with schemas or error message
    */
   async loadSchemas() {
-    if (!this._org || !this._site) return;
+    if (!this._org?.trim() || !this._site?.trim()) {
+      this._schemas = {};
+      this._schemasLoaded = false;
+      this._schemasLoadError = '';
+      return;
+    }
 
     const result = await loadSchemas(this._org, this._site, this._token);
 
     if (result.success) {
       this._schemas = result.schemas;
-      if (Object.keys(this._schemas).length === 0) {
-        const schemaEditorUrl = `https://da.live/apps/schema#/${encodeURIComponent(this._org)}/${encodeURIComponent(this._site)}`;
-        notifyImport({
-          type: 'warning',
-          message: 'No schemas found. Verify that the Organization and Site are correct, or create a schema first.',
-          link: {
-            url: schemaEditorUrl,
-            text: 'Open Schema editor',
-          },
-          toastKey: IMPORT_TOAST_KEY.SCHEMAS_EMPTY,
-        });
-      }
+      this._schemasLoaded = true;
+      this._schemasLoadError = '';
     } else {
-      notifyImport({
-        type: 'error',
-        message: result.error,
-        toastKey: IMPORT_TOAST_KEY.SCHEMAS_LOAD_FAILED,
-      });
+      this._schemas = {};
+      this._schemasLoaded = true;
+      this._schemasLoadError = result.error || 'Failed to load schemas.';
     }
   }
 
@@ -258,17 +254,8 @@ class ImportStructuredContent extends LitElement {
    * Validates JSON against schema without importing
    */
   async handleValidate() {
-    notifyImport({
-      type: 'info',
-      message: 'Validating against schema...',
-      toastKey: IMPORT_TOAST_KEY.VALIDATE_PROGRESS,
-    });
     let validation;
-    try {
-      validation = await this.performValidation();
-    } finally {
-      dismissToastByDedupeKey(IMPORT_TOAST_KEY.VALIDATE_PROGRESS);
-    }
+    validation = await this.performValidation();
 
     if (!validation) return;
 
@@ -286,13 +273,11 @@ class ImportStructuredContent extends LitElement {
           url: `https://da.live/apps/schema#/${this._org}/${this._site}/.da/forms/schemas/${this._schemaName}`,
           text: 'Edit Schema',
         },
-        toastKey: IMPORT_TOAST_KEY.VALIDATE_SCHEMA_ERRORS,
       });
     } else {
       notifyImport({
         type: 'error',
         message: validation.error,
-        toastKey: IMPORT_TOAST_KEY.VALIDATE_SIMPLE_ERROR,
       });
     }
   }
@@ -318,17 +303,8 @@ class ImportStructuredContent extends LitElement {
   async handleSubmit(event) {
     event.preventDefault();
 
-    notifyImport({
-      type: 'info',
-      message: 'Validating against schema...',
-      toastKey: IMPORT_TOAST_KEY.VALIDATE_PROGRESS,
-    });
     let validation;
-    try {
-      validation = await this.performValidation();
-    } finally {
-      dismissToastByDedupeKey(IMPORT_TOAST_KEY.VALIDATE_PROGRESS);
-    }
+    validation = await this.performValidation();
 
     if (!validation) return;
 
@@ -342,23 +318,15 @@ class ImportStructuredContent extends LitElement {
             url: `https://da.live/apps/schema#/${this._org}/${this._site}/.da/forms/schemas/${this._schemaName}`,
             text: 'Edit Schema',
           },
-          toastKey: IMPORT_TOAST_KEY.VALIDATE_SCHEMA_ERRORS,
         });
       } else {
         notifyImport({
           type: 'error',
           message: validation.error,
-          toastKey: IMPORT_TOAST_KEY.VALIDATE_SIMPLE_ERROR,
         });
       }
       return;
     }
-
-    notifyImport({
-      type: 'info',
-      message: 'Importing content...',
-      toastKey: IMPORT_TOAST_KEY.IMPORT_PROGRESS,
-    });
 
     const htmlContent = serialise({
       json: {
@@ -370,11 +338,7 @@ class ImportStructuredContent extends LitElement {
       },
     });
     let result;
-    try {
-      result = await importToDA(this._org, this._site, this._documentPath, htmlContent, this._token);
-    } finally {
-      dismissToastByDedupeKey(IMPORT_TOAST_KEY.IMPORT_PROGRESS);
-    }
+    result = await importToDA(this._org, this._site, this._documentPath, htmlContent, this._token);
 
     if (result?.success) {
       notifyImport({
@@ -386,7 +350,6 @@ class ImportStructuredContent extends LitElement {
       notifyImport({
         type: 'error',
         message: `Import failed: ${result.error}`,
-        toastKey: IMPORT_TOAST_KEY.IMPORT_FAILED,
       });
     }
   }
@@ -444,6 +407,14 @@ class ImportStructuredContent extends LitElement {
   renderSchemaSelect() {
     const schemaNames = Object.keys(this._schemas).sort();
     const hasSchemas = schemaNames.length > 0;
+    const org = this._org?.trim() || '';
+    const site = this._site?.trim() || '';
+    const hasOrgSite = Boolean(org && site);
+    const showSchemasStatus = hasOrgSite && this._schemasLoaded && !hasSchemas;
+    const scopeText = hasOrgSite ? `"${org}/${site}"` : 'your project';
+    const statusText = this._schemasLoadError
+      ? `Could not load schemas for ${scopeText}. Check values and try again.`
+      : `No schemas found for ${scopeText}.`;
 
     return html`
       <div class="form-group">
@@ -464,6 +435,34 @@ class ImportStructuredContent extends LitElement {
         : html`<option value="">—</option>`
       }
         </select>
+        ${showSchemasStatus
+    ? html`
+              <p class="field-help field-help--warning">
+                ${statusText}
+                Manage schemas in
+                <a
+                  class="field-help__link"
+                  href=${this.schemaEditorUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Schema editor
+                </a>.
+              </p>
+            `
+    : html`
+              <p class="field-help">
+                Manage schemas in
+                <a
+                  class="field-help__link"
+                  href=${this.schemaEditorUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Schema editor
+                </a>.
+              </p>
+            `}
       </div>
     `;
   }

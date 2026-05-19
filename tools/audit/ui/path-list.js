@@ -1,5 +1,5 @@
 import { html, LitElement } from 'https://da.live/nx/deps/lit/lit-core.min.js';
-import { formatSmartTime, pathForDisplay } from '../lib/audit-formatters.js';
+import { formatSmartTime, pathForDisplay } from '../core/formatters.js';
 
 const EL_NAME = 'audit-path-list';
 

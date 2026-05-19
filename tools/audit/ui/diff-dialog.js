@@ -1,13 +1,9 @@
 import { html, LitElement } from 'https://da.live/nx/deps/lit/lit-core.min.js';
 import {
-  fetchLatestDocumentSource,
-  fetchVersionSourceByUrl,
-} from '../utils/api.js';
-import {
   formatSmartTime,
   parseTimestamp,
   pathForDisplay,
-} from '../lib/audit-formatters.js';
+} from '../core/formatters.js';
 import {
   iconChevronDown,
   iconChevronUp,
@@ -248,9 +244,8 @@ class AuditDiffDialog extends LitElement {
     path: { type: String },
     versions: { type: Array },
     requestedVersionId: { type: String },
-    org: { type: String },
-    site: { type: String },
-    token: { type: String },
+    fetchLatest: { attribute: false },
+    fetchVersion: { attribute: false },
     _diffOptions: { state: true },
     _diffLeftOptionId: { state: true },
     _diffRightOptionId: { state: true },
@@ -266,9 +261,8 @@ class AuditDiffDialog extends LitElement {
     this.path = '';
     this.versions = [];
     this.requestedVersionId = '';
-    this.org = '';
-    this.site = '';
-    this.token = '';
+    this.fetchLatest = null;
+    this.fetchVersion = null;
     this._diffOptions = [];
     this._diffLeftOptionId = LATEST_DIFF_OPTION_ID;
     this._diffRightOptionId = '';
@@ -289,10 +283,7 @@ class AuditDiffDialog extends LitElement {
     const externalChanged = changedProperties.has('open')
       || changedProperties.has('path')
       || changedProperties.has('versions')
-      || changedProperties.has('requestedVersionId')
-      || changedProperties.has('org')
-      || changedProperties.has('site')
-      || changedProperties.has('token');
+      || changedProperties.has('requestedVersionId');
     if (!externalChanged) return;
 
     if (!this.open) {
@@ -308,8 +299,6 @@ class AuditDiffDialog extends LitElement {
     const signature = [
       this.path,
       this.requestedVersionId,
-      this.org,
-      this.site,
       normalizeVersionSignature(this.versions),
     ].join('::');
     if (signature === this._lastOpenSignature) return;
@@ -374,10 +363,12 @@ class AuditDiffDialog extends LitElement {
 
   async fetchSourceForDiffOption(option) {
     if (option?.type === 'latest') {
-      return fetchLatestDocumentSource(this.org, this.site, this.path, this.token);
+      if (!this.fetchLatest) return { success: false, error: 'Diff fetcher unavailable.' };
+      return this.fetchLatest(this.path);
     }
     if (option?.type === 'version') {
-      return fetchVersionSourceByUrl(option.versionUrl, this.token);
+      if (!this.fetchVersion) return { success: false, error: 'Diff fetcher unavailable.' };
+      return this.fetchVersion(option.versionUrl);
     }
     return { success: false, error: 'Unknown diff source option.' };
   }

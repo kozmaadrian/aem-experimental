@@ -1,13 +1,8 @@
 import { html, LitElement } from 'https://da.live/nx/deps/lit/lit-core.min.js';
 import DA_SDK from 'https://da.live/nx/utils/sdk.js';
 import getStyle from 'https://da.live/nx/utils/styles.js';
-import { debounce } from './utils/helpers.js';
-import { validateAgainstSchema } from './utils/validators.js';
 import { serialise } from 'https://fix-reusable-serialiser--da-nx--adobe.aem.live/nx/blocks/form/utils/serialise.js';
-import { loadSchemas, fetchSchema, importToDA } from './utils/api.js';
-import { showToast } from '../shared/components/toast/toast.js';
-
-// Import CodeMirror
+// CodeMirror — browser-only, lives in the shell since it owns the DOM editor.
 import { EditorState } from 'https://esm.sh/@codemirror/state@6';
 import {
   EditorView,
@@ -20,147 +15,45 @@ import { json, jsonParseLinter } from 'https://esm.sh/@codemirror/lang-json@6';
 import { linter, lintGutter } from 'https://esm.sh/@codemirror/lint@6';
 import { syntaxHighlighting, defaultHighlightStyle } from 'https://esm.sh/@codemirror/language@6';
 
-// Component constants
+import { createImportSession } from './core/session.js';
+import { createImportIo } from './app/import-io.js';
+import { debounce } from '../shared/utils/debounce.js';
+import { showToast } from '../shared/components/toast/toast.js';
+
 const EL_NAME = 'import-sc';
 const styles = await getStyle(import.meta.url);
 const baseStyles = await getStyle(new URL('../shared/styles/tool-base.css', import.meta.url).href);
 
-const NOTIFY_VARIANT = {
-  error: 'error',
-  warning: 'warning',
-  success: 'success',
-  info: 'info',
-};
-
-/** @param {{ type: string, message: string, errors?: object[], link?: { url: string, text: string } }} payload */
-function notifyImport(payload) {
-  const { type, message, errors, link } = payload;
-  let text = message || '';
-  if (errors?.length) {
-    text += `\n${errors.map((e) => `${e.path}: ${e.message}`).join('\n')}`;
-  }
-  showToast({
-    message: text,
-    variant: NOTIFY_VARIANT[type] || 'info',
-    link: link?.url && link?.text ? link : null,
-  });
-}
-
-/**
- * Import Structured Content Web Component
- */
 class ImportStructuredContent extends LitElement {
   static properties = {
-    _context: { state: true },
-    _token: { state: true },
-    _schemas: { state: true },
-    _editor: { state: true },
-    _org: { state: true },
-    _site: { state: true },
-    _documentPath: { state: true },
-    _schemaName: { state: true },
-    _schemasLoaded: { state: true },
-    _schemasLoadError: { state: true },
+    token: { attribute: false },
+    _snapshot: { state: true },
   };
 
   constructor() {
     super();
-    this._schemas = {};
-    this._editor = null;
-    this._org = '';
-    this._site = '';
-    this._documentPath = '';
-    this._schemaName = '';
-    this._schemasLoaded = false;
-    this._schemasLoadError = '';
-
-    // Create debounced schema loader (500ms delay)
-    this.debouncedLoadSchemas = debounce(() => this.loadSchemas(), 500);
-  }
-
-  /**
-   * Returns the DA Schema editor URL, optionally scoped to org/site.
-   * @returns {string}
-   */
-  get schemaEditorUrl() {
-    const org = (this._org || '').trim();
-    const site = (this._site || '').trim();
-    if (!org || !site) return 'https://da.live/apps/schema';
-    return `https://da.live/apps/schema#/${encodeURIComponent(org)}/${encodeURIComponent(site)}`;
+    this.debouncedLoadSchemas = debounce(() => this._session?.loadSchemas(), 500);
   }
 
   connectedCallback() {
     super.connectedCallback();
     this.shadowRoot.adoptedStyleSheets = [baseStyles, styles];
+    this._session = createImportSession({
+      io: createImportIo({ token: this.token }),
+      serialise,
+      notify: showToast,
+      onChange: (snapshot) => { this._snapshot = snapshot; },
+    });
+    this._snapshot = this._session.getState();
   }
 
-  /**
-   * Lifecycle method called after first render
-   * Initializes schemas and CodeMirror editor
-   */
   async firstUpdated() {
-    await this.loadSchemas();
+    await this._session.loadSchemas();
     this.initCodeMirror();
   }
 
-  /**
-   * Loads available schemas from DA API
-   * Updates component state with schemas or error message
-   */
-  async loadSchemas() {
-    if (!this._org?.trim() || !this._site?.trim()) {
-      this._schemas = {};
-      this._schemasLoaded = false;
-      this._schemasLoadError = '';
-      return;
-    }
+  /* --- CodeMirror lifecycle (DOM-only) ------------------------------- */
 
-    const result = await loadSchemas(this._org, this._site, this._token);
-
-    if (result.success) {
-      this._schemas = result.schemas;
-      this._schemasLoaded = true;
-      this._schemasLoadError = '';
-    } else {
-      this._schemas = {};
-      this._schemasLoaded = true;
-      this._schemasLoadError = result.error || 'Failed to load schemas.';
-    }
-  }
-
-  /**
-   * Normalizes destination path to ensure a leading slash.
-   * @param {string} documentPath
-   * @returns {string}
-   */
-  normalizeDocumentPath(documentPath) {
-    const trimmedPath = documentPath?.trim() || '';
-    if (!trimmedPath) return '';
-    return trimmedPath.startsWith('/') ? trimmedPath : `/${trimmedPath}`;
-  }
-
-  /**
-   * Handles input field changes
-   * @param {string} field - Field name
-   * @param {string} value - Field value
-   */
-  handleFieldChange(field, value) {
-    const normalizedValue = field === 'documentPath'
-      ? this.normalizeDocumentPath(value)
-      : value;
-
-    this[`_${field}`] = normalizedValue;
-
-    // Reload schemas if org or site changes (debounced)
-    if (field === 'org' || field === 'site') {
-      this.debouncedLoadSchemas();
-    }
-  }
-
-  /**
-   * Returns CodeMirror editor extensions configuration
-   * @returns {Array} Array of CodeMirror extensions
-   */
   getCodeMirrorExtensions() {
     return [
       cmPlaceholder('Paste your JSON content here'),
@@ -180,13 +73,9 @@ class ImportStructuredContent extends LitElement {
     ];
   }
 
-  /**
-   * Initializes CodeMirror editor with JSON support
-   */
   initCodeMirror() {
     const editorElement = this.shadowRoot.querySelector('.json-editor');
     if (!editorElement) return;
-
     this._editor = new EditorView({
       state: EditorState.create({
         doc: '{}',
@@ -194,258 +83,86 @@ class ImportStructuredContent extends LitElement {
       }),
       parent: editorElement,
     });
+    this._session?.setEditor({
+      getValue: () => this._editor?.state.doc.toString() || '',
+    });
   }
 
-  /**
-   * Gets current content from CodeMirror editor
-   * @returns {string} Editor content
-   */
-  getEditorContent() {
-    return this._editor?.state.doc.toString() || '';
+  /* --- UI → core ----------------------------------------------------- */
+
+  handleFieldChange(field, value) {
+    this._session?.setField(field, value);
+    if (field === 'org' || field === 'site') {
+      this.debouncedLoadSchemas();
+    }
   }
 
-  /**
-   * Formats validation errors for display
-   */
-  formatValidationErrors(errors) {
-    return errors.map(err => ({
-      path: err.path && err.path !== '#' ? err.path : 'Root',
-      message: err.message
-    }));
-  }
-
-  /**
-   * Validates JSON against selected schema
-   * @returns {Promise<{valid: boolean, data?: object, errors?: array}>}
-   */
-  async performValidation() {
-    if (!this._schemaName) {
-      return { valid: false, error: 'Please select a schema first' };
-    }
-
-    const schema = this._schemas[this._schemaName];
-    if (!schema) {
-      return { valid: false, error: 'Selected schema not found' };
-    }
-
-    const schemaResult = await fetchSchema(schema.path, this._token);
-    if (!schemaResult.success) {
-      return { valid: false, error: `Failed to load schema: ${schemaResult.error}` };
-    }
-
-    const jsonData = this.getEditorContent();
-    const validationResult = validateAgainstSchema(jsonData, schemaResult.schema);
-
-    if (!validationResult.valid) {
-      if (validationResult.errors) {
-        return {
-          valid: false,
-          errors: this.formatValidationErrors(validationResult.errors)
-        };
-      }
-      return { valid: false, error: validationResult.error };
-    }
-
-    return { valid: true, data: validationResult.data };
-  }
-
-  /**
-   * Handles validate button click
-   * Validates JSON against schema without importing
-   */
   async handleValidate() {
-    let validation;
-    validation = await this.performValidation();
-
-    if (!validation) return;
-
-    if (validation.valid) {
-      notifyImport({
-        type: 'success',
-        message: `JSON is valid and matches the "${this._schemaName}" schema!`,
-      });
-    } else if (validation.errors) {
-      notifyImport({
-        type: 'error',
-        message: `JSON validation failed against the "${this._schemaName}" schema:`,
-        errors: validation.errors,
-        link: {
-          url: `https://da.live/apps/schema#/${this._org}/${this._site}/.da/forms/schemas/${this._schemaName}`,
-          text: 'Edit Schema',
-        },
-      });
-    } else {
-      notifyImport({
-        type: 'error',
-        message: validation.error,
-      });
-    }
+    await this._session?.validate();
   }
 
-  /**
-   * Extracts a title from the destination document path.
-   * Uses the final non-empty path segment without a .html suffix.
-   * @returns {string}
-   */
-  getDocumentTitle() {
-    const documentPath = this.normalizeDocumentPath(this._documentPath);
-    const segments = documentPath.split('/').filter(Boolean);
-    const lastSegment = segments[segments.length - 1] || '';
-    const title = lastSegment.replace(/\.html$/i, '');
-    return title || this._schemaName;
-  }
-
-  /**
-   * Handles form submission
-   * Validates JSON against schema, generates HTML, and imports to DA
-   * @param {Event} event - Form submit event
-   */
   async handleSubmit(event) {
     event.preventDefault();
-
-    let validation;
-    validation = await this.performValidation();
-
-    if (!validation) return;
-
-    if (!validation.valid) {
-      if (validation.errors) {
-        notifyImport({
-          type: 'error',
-          message: `JSON validation failed against the "${this._schemaName}" schema:`,
-          errors: validation.errors,
-          link: {
-            url: `https://da.live/apps/schema#/${this._org}/${this._site}/.da/forms/schemas/${this._schemaName}`,
-            text: 'Edit Schema',
-          },
-        });
-      } else {
-        notifyImport({
-          type: 'error',
-          message: validation.error,
-        });
-      }
-      return;
-    }
-
-    const htmlContent = serialise({
-      json: {
-        metadata: {
-          schemaName: this._schemaName,
-          title: this.getDocumentTitle(),
-        },
-        data: validation.data,
-      },
-    });
-    let result;
-    result = await importToDA(this._org, this._site, this._documentPath, htmlContent, this._token);
-
-    if (result?.success) {
-      notifyImport({
-        type: 'success',
-        message: 'Content imported successfully!',
-        link: { url: result.url, text: 'View in Editor' },
-      });
-    } else if (result) {
-      notifyImport({
-        type: 'error',
-        message: `Import failed: ${result.error}`,
-      });
-    }
+    await this._session?.importDocument();
   }
 
-  /**
-   * Determines if validate button should be enabled
-   */
-  get canValidate() {
-    return Object.keys(this._schemas).length > 0
-      && this._org?.trim()
-      && this._site?.trim()
-      && this._documentPath?.trim()
-      && this._schemaName?.trim()
-      && this.getEditorContent()?.trim();
-  }
+  /* --- Render -------------------------------------------------------- */
 
-  /**
-   * Determines if import button should be enabled
-   */
-  get canImport() {
-    if (!this.canValidate) return false;
-
-    // Import requires valid JSON syntax
-    try {
-      JSON.parse(this.getEditorContent());
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
-  /**
-   * Renders a form input field
-   */
   renderInput(id, label, value, placeholder = '') {
     return html`
       <div class="form-group">
         <label for="${id}">${label}</label>
-        <input 
-          type="text" 
-          id="${id}" 
+        <input
+          type="text"
+          id="${id}"
           name="${id}"
           .value=${value}
           placeholder="${placeholder}"
           @input=${(e) => this.handleFieldChange(id, e.target.value)}
-          required 
+          required
         />
       </div>
     `;
   }
 
-  /**
-   * Renders schema select dropdown
-   */
   renderSchemaSelect() {
-    const schemaNames = Object.keys(this._schemas).sort();
+    const s = this._snapshot;
+    const schemaNames = Object.keys(s.schemas).sort();
     const hasSchemas = schemaNames.length > 0;
-    const org = this._org?.trim() || '';
-    const site = this._site?.trim() || '';
+    const org = s.org?.trim() || '';
+    const site = s.site?.trim() || '';
     const hasOrgSite = Boolean(org && site);
-    const showSchemasStatus = hasOrgSite && this._schemasLoaded && !hasSchemas;
+    const showSchemasStatus = hasOrgSite && s.schemasLoaded && !hasSchemas;
     const scopeText = hasOrgSite ? `"${org}/${site}"` : 'your project';
-    const statusText = this._schemasLoadError
+    const statusText = s.schemasLoadError
       ? `Could not load schemas for ${scopeText}. Check values and try again.`
       : `No schemas found for ${scopeText}.`;
+    const schemaUrl = this._session?.schemaEditorUrl() || 'https://da.live/apps/schema';
 
     return html`
       <div class="form-group">
         <label for="schema-name">Schema Name</label>
-        <select 
-          id="schema-name" 
+        <select
+          id="schema-name"
           name="schemaName"
-          .value=${this._schemaName}
+          .value=${s.schemaName}
           @change=${(e) => this.handleFieldChange('schemaName', e.target.value)}
           ?disabled=${!hasSchemas}
           required
         >
           ${hasSchemas
-        ? html`
+    ? html`
                 <option value="">Select a schema…</option>
-                ${schemaNames.map(name => html`<option value="${name}">${name}</option>`)}
+                ${schemaNames.map((name) => html`<option value="${name}">${name}</option>`)}
               `
-        : html`<option value="">—</option>`
-      }
+    : html`<option value="">—</option>`}
         </select>
         ${showSchemasStatus
     ? html`
               <p class="field-help field-help--warning">
                 ${statusText}
                 Manage schemas in
-                <a
-                  class="field-help__link"
-                  href=${this.schemaEditorUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
+                <a class="field-help__link" href=${schemaUrl} target="_blank" rel="noopener noreferrer">
                   Schema editor
                 </a>.
               </p>
@@ -453,36 +170,33 @@ class ImportStructuredContent extends LitElement {
     : html`
               <p class="field-help">
                 Manage schemas in
-                <a
-                  class="field-help__link"
-                  href=${this.schemaEditorUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
+                <a class="field-help__link" href=${schemaUrl} target="_blank" rel="noopener noreferrer">
                   Schema editor
                 </a>.
-              </p>
-            `}
+              </p>`}
       </div>
     `;
   }
 
-  /**
-   * Renders the main component template
-   */
   render() {
+    const s = this._snapshot;
+    if (!s) return html``;
+
+    const canValidate = this._session?.canValidate() ?? false;
+    const canImport = this._session?.canImport() ?? false;
+
     return html`
       <div class="container">
         <main>
           <form @submit=${this.handleSubmit}>
             <div class="form-row">
-              ${this.renderInput('org', 'Organization', this._org, 'Organization')}
-              ${this.renderInput('site', 'Site', this._site, 'Site')}
+              ${this.renderInput('org', 'Organization', s.org, 'Organization')}
+              ${this.renderInput('site', 'Site', s.site, 'Site')}
             </div>
 
             <div class="form-row">
               ${this.renderSchemaSelect()}
-              ${this.renderInput('documentPath', 'Target Document Path', this._documentPath, '/path/to/document')}
+              ${this.renderInput('documentPath', 'Target Document Path', s.documentPath, '/path/to/document')}
             </div>
 
             <div class="form-group">
@@ -491,8 +205,13 @@ class ImportStructuredContent extends LitElement {
             </div>
 
             <div class="form-actions">
-              <button type="button" class="btn btn-secondary" @click=${this.handleValidate} ?disabled=${!this.canValidate}>Validate</button>
-              <button type="submit" class="btn btn-primary" ?disabled=${!this.canImport}>Import</button>
+              <button type="button" class="btn btn-secondary"
+                      @click=${this.handleValidate} ?disabled=${!canValidate}>
+                Validate
+              </button>
+              <button type="submit" class="btn btn-primary" ?disabled=${!canImport}>
+                Import
+              </button>
             </div>
           </form>
         </main>
@@ -503,30 +222,15 @@ class ImportStructuredContent extends LitElement {
 
 customElements.define(EL_NAME, ImportStructuredContent);
 
-/**
- * Initializes the Import Structured Content component
- * @param {HTMLElement} el - Container element to mount component
- */
-export default async function init(el) {
-  el.replaceChildren();
-  const { context, token } = await DA_SDK;
-
-  let cmp = el.querySelector(EL_NAME);
-  if (!cmp) {
-    cmp = document.createElement(EL_NAME);
-    cmp._context = context;
-    cmp._token = token;
-    el.append(cmp);
-  }
-}
-
-// Auto-initialize when script loads
+// Auto-initialize when script loads.
 (async () => {
   try {
     const main = document.querySelector('main');
-    if (main) {
-      await init(main);
-    }
+    if (!main) return;
+    const { token } = await DA_SDK;
+    const cmp = document.createElement(EL_NAME);
+    cmp.token = token;
+    main.replaceChildren(cmp);
   } catch (error) {
     console.error('Failed to initialize app:', error);
   }

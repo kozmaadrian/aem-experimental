@@ -1,0 +1,559 @@
+/*
+ * content-transfer styles. Mirrors audit's layout (shell + sticky header + split
+ * workspace). Field/button/switch styling comes from tool-base.css.
+ *
+ * If we eventually want one canonical sheet, lift the .transfer-* / .panel-* /
+ * .sidebar-* rules into tools/shared/styles/workspace.css and adopt it in
+ * both audit/audit.js and content-transfer/content-transfer.js.
+ */
+
+:host {
+  --transfer-line: rgb(15 23 42 / 10%);
+  --transfer-line-2: rgb(15 23 42 / 16%);
+  --transfer-panel: #fff;
+  --transfer-panel-head: rgb(250 251 252 / 96%);
+  --transfer-muted: #64748b;
+  --transfer-radius: 14px;
+  --transfer-shadow: 0 18px 40px rgb(15 23 42 / 7%);
+  --transfer-header-max: 1200px;
+  --transfer-control-height: var(--tool-control-height);
+
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  margin: 0;
+  font-family: inherit;
+}
+
+transfer-source-header,
+transfer-workspace,
+transfer-path-list {
+  display: block;
+  font-family: inherit;
+}
+
+/* Fills the transfer-pane--detail so the inner .panel-scroll inherits a
+ * bounded height and can actually scroll. */
+transfer-target-panel {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  font-family: inherit;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* --- Shell + header ------------------------------------------------ */
+
+.transfer-shell {
+  box-sizing: border-box;
+  height: 100%;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
+  font-family: inherit;
+}
+
+.transfer-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: #fff;
+}
+
+.header-inner {
+  max-width: var(--transfer-header-max);
+  margin: 0 auto;
+  padding: 0 0 16px;
+  display: grid;
+  gap: 14px;
+}
+
+.header-inner::after {
+  content: "";
+  display: block;
+  height: 1px;
+  width: min(88%, 1200px);
+  margin: 4px auto 0;
+  background: linear-gradient(
+    90deg,
+    rgb(15 23 42 / 0%) 0%,
+    rgb(15 23 42 / 8%) 18%,
+    rgb(15 23 42 / 10%) 50%,
+    rgb(15 23 42 / 8%) 82%,
+    rgb(15 23 42 / 0%) 100%
+  );
+  pointer-events: none;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* --- Search bar ---------------------------------------------------- */
+
+.search-bar {
+  display: grid;
+  gap: 12px;
+  align-items: end;
+}
+
+.search-bar__field {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--s2-spacing-75);
+  min-width: 0;
+}
+
+.search-bar--full {
+  grid-template-columns:
+    minmax(96px, 1fr)
+    minmax(80px, 0.95fr)
+    minmax(160px, 2fr)
+    auto
+    minmax(96px, auto);
+  gap: 10px 12px;
+}
+
+.search-bar__submit {
+  min-width: 96px;
+}
+
+.search-bar__query,
+.field--query {
+  min-width: 0;
+}
+
+/* --- Main / workspace ---------------------------------------------- */
+
+.transfer-main-area {
+  box-sizing: border-box;
+  max-width: var(--transfer-header-max);
+  width: 100%;
+  margin: 0 auto;
+  padding: 18px 0 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: stretch;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.transfer-main-area > :not(transfer-workspace) {
+  flex-shrink: 0;
+}
+
+.transfer-main-area > transfer-workspace,
+.transfer-main-area > transfer-workspace .transfer-workspace {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.transfer-workspace__grid {
+  display: grid;
+  grid-template-columns: minmax(260px, 38%) minmax(320px, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  column-gap: 16px;
+  row-gap: 0;
+  align-items: stretch;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.transfer-workspace__cell--head-sidebar { grid-column: 1; grid-row: 1; }
+.transfer-workspace__cell--head-detail  { grid-column: 2; grid-row: 1; }
+.transfer-workspace__cell--body-sidebar { grid-column: 1; grid-row: 2; min-height: 0; }
+.transfer-workspace__cell--body-detail  { grid-column: 2; grid-row: 2; min-height: 0; }
+
+.transfer-pane {
+  padding: 5px;
+  background: var(--transfer-panel);
+  border: 1px solid var(--transfer-line);
+  border-radius: var(--transfer-radius);
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  font-family: inherit;
+}
+
+.transfer-pane--sidebar {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* --- Panel head (sidebar header + detail header) -------------------- */
+
+.transfer-workspace .transfer-workspace__cell--head-sidebar.panel-head,
+.transfer-workspace .transfer-workspace__cell--head-detail.panel-head {
+  padding: 12px 16px;
+  box-sizing: border-box;
+  height: 100%;
+  align-self: stretch;
+}
+
+.transfer-workspace__cell--head-sidebar.panel-head {
+  background: transparent;
+  align-items: center;
+}
+
+.transfer-workspace__cell--head-detail.panel-head {
+  border: 1px solid var(--transfer-line);
+  border-radius: var(--transfer-radius) var(--transfer-radius) 0 0;
+}
+
+.transfer-workspace .transfer-workspace__cell--body-detail.transfer-pane--detail {
+  border-top: none;
+  border-radius: 0 0 var(--transfer-radius) var(--transfer-radius);
+}
+
+.panel-head {
+  flex: 0 0 auto;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--transfer-line);
+  background: var(--transfer-panel-head);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.panel-head__title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #0f172a;
+  letter-spacing: 0.01em;
+}
+
+.panel-head__sub {
+  margin: 4px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--transfer-muted);
+  font-weight: 400;
+}
+
+.panel-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  font-family: inherit;
+}
+
+.panel-scroll--sidebar {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+.panel-scroll--detail {
+  padding: 0;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+}
+
+/* --- Sidebar list (transfer-sidebar-list) ----------------------------- */
+
+.transfer-sidebar-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-family: inherit;
+}
+
+.transfer-sidebar-item {
+  margin: 0;
+}
+
+.transfer-path-row {
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 18px;
+  margin: 0;
+  border: none;
+  border-bottom: 1px solid var(--transfer-line);
+  border-radius: 0;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  transition: background 0.14s ease;
+}
+
+.transfer-path-row:hover {
+  background: rgb(38 128 235 / 6%);
+}
+
+.transfer-path-row:focus-visible {
+  outline: 2px solid #1473e6;
+  outline-offset: -2px;
+}
+
+.transfer-path-row.is-selected {
+  background: rgb(38 128 235 / 12%);
+}
+
+.transfer-path-row__primary {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.transfer-path-row__aside {
+  flex: 0 0 auto;
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  max-width: 44%;
+}
+
+.transfer-path-row__path {
+  min-width: 0;
+}
+
+.transfer-path-row__path code {
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.45;
+  color: #0f172a;
+  word-break: break-all;
+}
+
+.transfer-path-row__time {
+  font-size: 12px;
+  font-weight: 500;
+  color: #475569;
+  white-space: nowrap;
+}
+
+.transfer-path-row__check {
+  flex: 0 0 auto;
+  margin: 0;
+}
+
+/* --- Bulk select link buttons (in sub) ------------------------------ */
+
+.panel-head__bulk {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: 8px;
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1;
+  color: var(--transfer-muted);
+}
+
+/* Vertical separator drawn between sibling controls in the bulk strip. */
+.panel-head__bulk > * + *::before {
+  content: "";
+  display: inline-block;
+  width: 1px;
+  height: 12px;
+  margin-right: 10px;
+  vertical-align: middle;
+  background: var(--transfer-line-2);
+}
+
+/* Clearable "× N items selected" — plain text + thin × icon, no pill, no
+ * background, no border. Click to clear the selection. */
+.transfer-selection {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  background: none;
+  border: none;
+  outline: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.transfer-selection:hover { color: #0f172a; }
+.transfer-selection:focus-visible { color: #0f172a; }
+
+.transfer-selection__close {
+  flex: 0 0 auto;
+  display: inline-flex;
+}
+
+/* Plain text link button used for "Select all". */
+.transfer-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.transfer-link:hover { color: #0f172a; text-decoration: underline; }
+
+/* --- Detail (target) panel body ------------------------------------ */
+
+.transfer-detail {
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.transfer-detail__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* Three-column target row: org · site · folder.
+ * Folder gets twice the room because paths are long. */
+.transfer-detail__row--target {
+  grid-template-columns: minmax(120px, 1fr) minmax(120px, 1fr) minmax(180px, 2fr);
+}
+
+.transfer-detail__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2-spacing-75);
+  min-width: 0;
+}
+
+.transfer-detail__toggles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  padding: 4px 0;
+}
+
+.transfer-detail__action-btn {
+  margin-left: auto;
+  min-width: 120px;
+}
+
+.transfer-detail__hint {
+  font-size: 12px;
+  color: var(--transfer-muted);
+  margin: 0;
+}
+
+/* --- Status list (results of last run) ------------------------------ */
+
+.transfer-status {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-top: 1px solid var(--transfer-line);
+  padding-top: 14px;
+}
+
+.transfer-status__title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+}
+
+.transfer-status__summary {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--transfer-muted);
+}
+
+.transfer-status__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.transfer-status__item {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--transfer-line);
+  font-size: 12px;
+}
+
+.transfer-status__item:last-child { border-bottom: none; }
+
+.transfer-status__badge {
+  flex: 0 0 auto;
+  width: 70px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--transfer-muted);
+}
+
+.transfer-status__item--done .transfer-status__badge    { color: #2c882f; }
+.transfer-status__item--skipped .transfer-status__badge { color: var(--transfer-muted); }
+.transfer-status__item--failed .transfer-status__badge  { color: #c0392b; }
+
+.transfer-status__path {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  color: #0f172a;
+  word-break: break-all;
+}
+
+.transfer-status__error {
+  flex-basis: 100%;
+  margin-left: 80px;
+  color: #c0392b;
+  font-size: 12px;
+}
+
+/* --- Empty states + utility --------------------------------------- */
+
+.transfer-status__empty,
+.transfer-pane__empty {
+  margin: 12px 0;
+  padding: 12px 18px;
+  color: var(--transfer-muted);
+  font-size: 13px;
+  text-align: center;
+}

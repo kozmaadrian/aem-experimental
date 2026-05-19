@@ -1,5 +1,6 @@
 import { html, LitElement } from 'https://da.live/nx/deps/lit/lit-core.min.js';
 import { iconFilter } from '../../shared/components/icons/icons.js';
+import '../../shared/components/search-query-help/search-query-help.js';
 
 const EL_NAME = 'audit-search-header';
 
@@ -119,13 +120,16 @@ class AuditSearchHeader extends LitElement {
               />
             </label>
             <label class="search-bar__field" for="search-term">
-              <span class="field-label">Search</span>
+              <span class="search-bar__label-row">
+                <span class="field-label">Search</span>
+                <search-query-help></search-query-help>
+              </span>
               <input
                 type="text"
                 id="search-term"
                 name="searchTerm"
                 class="field field--query search-bar__query"
-                placeholder="Path segment or full-text query"
+                placeholder='e.g. /path/to/search or "keyword"'
                 .value=${this.searchTerm}
                 @input=${(event) => this.handleFieldInput('searchTerm', event)}
                 required

@@ -1,5 +1,8 @@
 /**
- * Helix admin log helpers: normalize paths and index preview / live activity.
+ * Helix admin log helpers: index preview / live activity by content key, and
+ * match search results against those indices.
+ *
+ * Pure — no fetch, no DOM. Safe for core/ layers.
  */
 
 /**
@@ -20,21 +23,11 @@ export function isLogLiveRoute(route) {
   return r === 'live' || r === 'live-job';
 }
 
-/**
- * @param {unknown} value
- * @returns {string[]}
- */
 function collectPathStrings(value) {
   if (typeof value !== 'string' || !value.trim()) return [];
   return [value.trim()];
 }
 
-/**
- * @param {unknown} entry
- * @param {(raw: string) => string} normalizeKey
- * @param {Set<string>} previewKeys
- * @param {Set<string>} liveKeys
- */
 function indexLogEntry(entry, normalizeKey, previewKeys, liveKeys) {
   const route = entry?.route;
   const preview = isLogPreviewRoute(route);

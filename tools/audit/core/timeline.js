@@ -2,7 +2,7 @@ import {
   authorsFromEmails,
   formatEventKind,
   parseTimestamp,
-} from './audit-formatters.js';
+} from './formatters.js';
 
 export function createLoadingAuditState() {
   return {
@@ -14,7 +14,7 @@ export function createLoadingAuditState() {
   };
 }
 
-export function classifyVersionEvent(entry = {}) {
+function classifyVersionEvent(entry = {}) {
   const normalizedLabel = entry.label?.toLowerCase() || '';
 
   if (normalizedLabel.includes('publish')) {
@@ -53,7 +53,7 @@ export function classifyVersionEvent(entry = {}) {
  * - Status is inferred from log label + version metadata.
  * - Modified rows have no version ID.
  */
-export function buildVersionEvents(versions) {
+function buildVersionEvents(versions) {
   if (!Array.isArray(versions) || !versions.length) return [];
   const seen = new Set();
 
@@ -106,7 +106,7 @@ export function buildVersionEvents(versions) {
   }, []);
 }
 
-export function buildTimeline(versions) {
+function buildTimeline(versions) {
   const events = buildVersionEvents(versions);
 
   return events.sort((left, right) => right.timestamp - left.timestamp);

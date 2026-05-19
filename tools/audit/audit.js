@@ -1,407 +1,84 @@
 import { html, LitElement } from 'https://da.live/nx/deps/lit/lit-core.min.js';
 import DA_SDK from 'https://da.live/nx/utils/sdk.js';
 import getStyle from 'https://da.live/nx/utils/styles.js';
-import {
-  authenticationErrorMessage,
-  fetchAdminLog,
-  fetchVersionTimeline,
-  normalizeAuditContentKey,
-  searchContentPaths,
-} from './utils/api.js';
-import { formatDuration } from './lib/audit-formatters.js';
-import {
-  buildLogPathIndex,
-  resultMatchesLogFilter,
-} from './lib/audit-log-filter.js';
-import {
-  buildAuditPayload,
-  createLoadingAuditState,
-} from './lib/audit-timeline.js';
+
+import { createAuditSession } from './core/session.js';
+import { formatDuration } from './core/formatters.js';
+
+import './ui/search-header.js';
+import './ui/workspace.js';
+import './ui/diff-dialog.js';
+
+import { createDaClient } from '../shared/da/index.js';
 import { iconProgressCircle } from '../shared/components/icons/icons.js';
-import './components/audit-search-header.js';
-import './components/audit-workspace.js';
-import './components/audit-diff-dialog.js';
 import { showToast } from '../shared/components/toast/toast.js';
 
 const EL_NAME = 'content-audit';
-/** Default Helix log window when Preview/Live filtering is on and dates are empty. */
-const DEFAULT_LOG_FILTER_RANGE_MS = 24 * 60 * 60 * 1000;
 const styles = await getStyle(import.meta.url);
 const baseStyles = await getStyle(new URL('../shared/styles/tool-base.css', import.meta.url).href);
 
-function formatDatetimeLocal(d) {
-  const pad = (n) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
-/** Past 24h window in local time for `datetime-local` inputs (matches default log filter). */
-function defaultLogDatetimeRangeLocal() {
-  const to = new Date();
-  const from = new Date(to.getTime() - DEFAULT_LOG_FILTER_RANGE_MS);
-  return { from: formatDatetimeLocal(from), to: formatDatetimeLocal(to) };
-}
-
-function datetimeLocalToIso(value) {
-  if (!value || typeof value !== 'string') return '';
-  const parsed = new Date(value.trim());
-  return Number.isNaN(parsed.getTime()) ? '' : parsed.toISOString();
-}
-
 class ContentAudit extends LitElement {
   static properties = {
-    _token: { state: true },
-    _org: { state: true },
-    _site: { state: true },
-    _searchTerm: { state: true },
-    _searchResults: { state: true },
-    _searchMeta: { state: true },
-    _expandedPath: { state: true },
-    _auditByPath: { state: true },
-    _isSearching: { state: true },
-    _fullTextSearch: { state: true },
-    _logFrom: { state: true },
-    _logTo: { state: true },
-    _logFilterPreview: { state: true },
-    _logFilterLive: { state: true },
-    _isDiffOpen: { state: true },
-    _diffPath: { state: true },
-    _diffVersions: { state: true },
-    _requestedDiffVersionId: { state: true },
+    token: { attribute: false },
+    _snapshot: { state: true },
   };
-
-  constructor() {
-    super();
-    this._org = '';
-    this._site = '';
-    this._searchTerm = '';
-    this._searchResults = [];
-    this._searchMeta = null;
-    this._expandedPath = '';
-    this._auditByPath = {};
-    this._isSearching = false;
-    this._fullTextSearch = false;
-    const logRange = defaultLogDatetimeRangeLocal();
-    this._logFrom = logRange.from;
-    this._logTo = logRange.to;
-    this._logFilterPreview = false;
-    this._logFilterLive = false;
-    this._activeSearchRequest = 0;
-    this._isDiffOpen = false;
-    this._diffPath = '';
-    this._diffVersions = [];
-    this._requestedDiffVersionId = '';
-  }
 
   connectedCallback() {
     super.connectedCallback();
     this.shadowRoot.adoptedStyleSheets = [baseStyles, styles];
+    this._session = createAuditSession({
+      io: createDaClient({ token: this.token }),
+      onChange: (snapshot) => { this._snapshot = snapshot; },
+      notify: showToast,
+    });
+    this._snapshot = this._session.getState();
   }
 
-  resetSearchResults() {
-    this._activeSearchRequest += 1;
-    this._isSearching = false;
-    this._searchResults = [];
-    this._searchMeta = null;
-    this._expandedPath = '';
-    this._auditByPath = {};
-    this.closeDiffDialog({ resetPath: true });
-  }
-
-  handleFieldChange(field, value) {
-    if (field === 'site') {
-      const nextSite = typeof value === 'string' ? value.trim() : '';
-      if (nextSite !== this._site) {
-        this._site = nextSite;
-        this.resetSearchResults();
-      }
-      return;
-    }
-
-    if (field === 'searchTerm') {
-      const nextSearchTerm = typeof value === 'string' ? value : '';
-      this._searchTerm = nextSearchTerm;
-      return;
-    }
-
-    if (field === 'org') {
-      const nextOrg = typeof value === 'string' ? value.trim() : '';
-      if (nextOrg !== this._org) {
-        this._org = nextOrg;
-        this.resetSearchResults();
-      }
-      return;
-    }
-
-    if (field === 'logFrom') {
-      this._logFrom = typeof value === 'string' ? value : '';
-      return;
-    }
-
-    if (field === 'logTo') {
-      this._logTo = typeof value === 'string' ? value : '';
-      return;
-    }
-
-    if (field === 'logFilterPreview') {
-      this._logFilterPreview = Boolean(value);
-      return;
-    }
-
-    if (field === 'logFilterLive') {
-      this._logFilterLive = Boolean(value);
-      return;
-    }
-  }
-
-  get canSearch() {
-    return Boolean(
-      this._org?.trim()
-      && this._site?.trim()
-      && this._searchTerm?.trim()
-      && !this._isSearching,
-    );
-  }
+  /* --- UI → core ----------------------------------------------------- */
 
   handleFieldChangeEvent(event) {
     const { field, value } = event?.detail || {};
     if (typeof field !== 'string') return;
-    this.handleFieldChange(field, value);
+    this._session.setField(field, value);
   }
 
   handleFullTextChange(event) {
     const nextValue = typeof event?.detail?.value === 'boolean'
       ? event.detail.value
-      : !this._fullTextSearch;
-    if (nextValue === this._fullTextSearch) return;
-    this._fullTextSearch = nextValue;
-  }
-
-  async executeSearch(searchTerm) {
-    if (!this._org?.trim() || !this._site?.trim() || !searchTerm?.trim()) return;
-
-    const fromRaw = this._logFrom?.trim() || '';
-    const toRaw = this._logTo?.trim() || '';
-    const useLogFilter = Boolean(this._logFilterPreview || this._logFilterLive);
-
-    if (useLogFilter) {
-      if ((fromRaw && !toRaw) || (!fromRaw && toRaw)) {
-        showToast({
-          variant: 'error',
-          message: 'Log filter needs both From and To, or leave both empty for the last 24 hours.',
-        });
-        return;
-      }
-      if (fromRaw && toRaw) {
-        const fromMs = new Date(fromRaw).getTime();
-        const toMs = new Date(toRaw).getTime();
-        if (Number.isNaN(fromMs) || Number.isNaN(toMs) || fromMs >= toMs) {
-          showToast({ variant: 'error', message: 'Log from must be before Log to.' });
-          return;
-        }
-      }
-    }
-
-    const requestId = ++this._activeSearchRequest;
-    const start = performance.now();
-
-    this._isSearching = true;
-    this._searchResults = [];
-    this._searchMeta = null;
-    this._expandedPath = '';
-    this._auditByPath = {};
-
-    let result;
-    try {
-      result = await searchContentPaths(
-        this._org,
-        this._site,
-        searchTerm,
-        this._token,
-        {
-          fullTextSearch: this._fullTextSearch,
-          maxResults: 150,
-          maxFiles: 1000,
-          concurrency: 8,
-        },
-      );
-    } catch (error) {
-      result = {
-        success: false,
-        error: error instanceof Error ? error.message : 'Search failed unexpectedly.',
-      };
-    }
-
-    if (requestId !== this._activeSearchRequest) return;
-
-    if (!result.success) {
-      this._isSearching = false;
-      showToast({ variant: 'error', message: result.error });
-      return;
-    }
-
-    let results = result.results;
-
-    if (useLogFilter) {
-      let fromIso;
-      let toIso;
-      let matchPreview = this._logFilterPreview;
-      let matchLive = this._logFilterLive;
-
-      if (!fromRaw && !toRaw) {
-        const to = new Date();
-        const from = new Date(to.getTime() - DEFAULT_LOG_FILTER_RANGE_MS);
-        fromIso = from.toISOString();
-        toIso = to.toISOString();
-      } else {
-        fromIso = datetimeLocalToIso(fromRaw);
-        toIso = datetimeLocalToIso(toRaw);
-      }
-
-      const logResult = await fetchAdminLog(this._org, this._site, this._token, {
-        from: fromIso,
-        to: toIso,
-      });
-      if (requestId !== this._activeSearchRequest) return;
-
-      if (!logResult.success) {
-        const err = typeof logResult.error === 'string' ? logResult.error.trim() : '';
-        const isAuth = err === authenticationErrorMessage();
-        showToast({
-          variant: 'warning',
-          message: isAuth
-            ? `${authenticationErrorMessage()} Preview and Published filters were not applied; showing all path matches.`
-            : `Log filter not applied: ${err}. Showing all path matches.`,
-        });
-      } else {
-        const normalizeKey = (raw) => normalizeAuditContentKey(raw, this._org, this._site);
-        const { previewKeys, liveKeys } = buildLogPathIndex(logResult.entries, normalizeKey);
-        results = results.filter((row) => resultMatchesLogFilter(
-          row,
-          previewKeys,
-          liveKeys,
-          {
-            matchPreview,
-            matchLive,
-          },
-          (path) => normalizeAuditContentKey(path, this._org, this._site),
-        ));
-      }
-    }
-
-    this._isSearching = false;
-    if (requestId !== this._activeSearchRequest) return;
-
-    const durationMs = performance.now() - start;
-    this._searchResults = results;
-    this._searchMeta = {
-      matches: results.length,
-      scanned: result.scanned,
-      durationMs,
-    };
-
-    if (results.length === 1 && results[0]?.path) {
-      void this.selectResultPath(results[0].path);
-    }
+      : !this._snapshot.fullTextSearch;
+    this._session.setField('fullTextSearch', nextValue);
   }
 
   async handleSearchSubmit() {
-    const term = this._searchTerm?.trim() || '';
-    if (!term || !this._org?.trim() || !this._site?.trim()) return;
-    await this.executeSearch(term);
-  }
-
-  async loadTimelineForPath(path) {
-    if (!path || !this._org?.trim() || !this._site?.trim()) return;
-
-    this._auditByPath = {
-      ...this._auditByPath,
-      [path]: createLoadingAuditState(),
-    };
-
-    const versionResult = await fetchVersionTimeline(
-      this._org,
-      this._site,
-      path,
-      this._token,
-    );
-
-    this._auditByPath = {
-      ...this._auditByPath,
-      [path]: buildAuditPayload(versionResult),
-    };
-  }
-
-  async selectResultPath(path) {
-    if (!path) return;
-
-    if (this._expandedPath === path) {
-      this._expandedPath = '';
-      this.closeDiffDialog({ resetPath: true });
-      return;
-    }
-
-    this._expandedPath = path;
-    this.closeDiffDialog({ resetPath: true });
-    const existing = this._auditByPath[path];
-    if (existing && !existing.loading) return;
-
-    await this.loadTimelineForPath(path);
+    await this._session.executeSearch();
   }
 
   async handleSelectPath(event) {
     const path = event?.detail?.path || '';
-    await this.selectResultPath(path);
+    await this._session.selectResultPath(path);
   }
 
   async handleRefreshTimeline(event) {
     const path = event?.detail?.path || '';
-    if (!path || path !== this._expandedPath) return;
-    await this.loadTimelineForPath(path);
+    if (!path || path !== this._snapshot.expandedPath) return;
+    await this._session.loadTimelineForPath(path);
   }
 
-  closeDiffDialog(options = {}) {
-    const { resetPath = false } = options;
-    this._isDiffOpen = false;
-    this._diffVersions = [];
-    this._requestedDiffVersionId = '';
-    if (resetPath) this._diffPath = '';
+  handleOpenDiff(event) {
+    const versionId = typeof event?.detail?.versionId === 'string'
+      ? event.detail.versionId
+      : '';
+    this._session.openDiff({ versionId });
   }
 
   handleCloseDiffDialog() {
-    this.closeDiffDialog();
+    this._session.closeDiffDialog();
   }
 
-  async handleOpenDiff(event) {
-    const requestedVersionId = typeof event?.detail?.versionId === 'string'
-      ? event.detail.versionId.trim()
-      : '';
-    if (!this._expandedPath) return;
-    const versions = Array.isArray(this.selectedAudit?.versions)
-      ? this.selectedAudit.versions
-      : [];
-    const hasVersionCandidates = versions.some((entry) => {
-      const versionId = typeof entry?.versionId === 'string' ? entry.versionId.trim() : '';
-      const versionUrl = typeof entry?.url === 'string' ? entry.url.trim() : '';
-      return Boolean(versionId && versionUrl);
-    });
-
-    if (!hasVersionCandidates) {
-      showToast({
-        variant: 'warning',
-        message: 'No saved versions are available for this path.',
-      });
-      return;
-    }
-
-    this._diffPath = this._expandedPath;
-    this._diffVersions = versions;
-    this._requestedDiffVersionId = requestedVersionId;
-    this._isDiffOpen = true;
-  }
+  /* --- Render -------------------------------------------------------- */
 
   renderSearchLoading() {
-    if (!this._isSearching) return '';
-
+    if (!this._snapshot?.isSearching) return '';
     return html`
       <div class="audit-empty-layout search-loading" role="status" aria-live="polite" aria-busy="true">
         <div class="empty-card">
@@ -417,44 +94,26 @@ class ContentAudit extends LitElement {
   }
 
   renderSearchMeta() {
-    if (!this._searchMeta) return '';
-
-    const m = this._searchMeta;
-    const lines = [];
-
-    if (m.matches === 0 && m.scanned != null) {
-      lines.push(html`
-        Found ${m.matches} of ${m.scanned} scanned files
-        in ${formatDuration(m.durationMs)}.
-      `);
-    }
-
-    if (!lines.length) return '';
-
+    const meta = this._snapshot?.searchMeta;
+    if (!meta) return '';
+    if (!(meta.matches === 0 && meta.scanned != null)) return '';
     return html`
       <div class="search-meta search-meta--center">
-        ${lines}
+        Found ${meta.matches} of ${meta.scanned} scanned files
+        in ${formatDuration(meta.durationMs)}.
       </div>
     `;
   }
 
-  get selectedAudit() {
-    if (!this._expandedPath) return null;
-    return this._auditByPath[this._expandedPath] || null;
-  }
-
   renderSearchWorkspace() {
-    if (!this._searchMeta) return '';
-
-    if (!this._searchResults.length) {
-      return '';
-    }
+    const s = this._snapshot;
+    if (!s?.searchMeta || !s.searchResults.length) return '';
 
     return html`
       <audit-workspace
-        .searchResults=${this._searchResults}
-        .selectedPath=${this._expandedPath}
-        .selectedAudit=${this.selectedAudit}
+        .searchResults=${s.searchResults}
+        .selectedPath=${s.expandedPath}
+        .selectedAudit=${this._session?.selectedAudit() || null}
         @audit-select-path=${this.handleSelectPath}
         @audit-refresh-timeline=${this.handleRefreshTimeline}
         @audit-open-diff=${this.handleOpenDiff}
@@ -463,19 +122,22 @@ class ContentAudit extends LitElement {
   }
 
   render() {
+    const s = this._snapshot;
+    if (!s) return html``;
+
     return html`
       <div class="audit-shell">
         <header class="audit-header">
           <audit-search-header
-            .org=${this._org}
-            .site=${this._site}
-            .searchTerm=${this._searchTerm}
-            .fullTextSearch=${this._fullTextSearch}
-            .logFrom=${this._logFrom}
-            .logTo=${this._logTo}
-            .logFilterPreview=${this._logFilterPreview}
-            .logFilterLive=${this._logFilterLive}
-            .canSearch=${this.canSearch}
+            .org=${s.org}
+            .site=${s.site}
+            .searchTerm=${s.searchTerm}
+            .fullTextSearch=${s.fullTextSearch}
+            .logFrom=${s.logFrom}
+            .logTo=${s.logTo}
+            .logFilterPreview=${s.logFilterPreview}
+            .logFilterLive=${s.logFilterLive}
+            .canSearch=${this._session?.canSearch() ?? false}
             @audit-field-change=${this.handleFieldChangeEvent}
             @audit-full-text-change=${this.handleFullTextChange}
             @audit-search-submit=${this.handleSearchSubmit}
@@ -487,13 +149,12 @@ class ContentAudit extends LitElement {
           ${this.renderSearchWorkspace()}
         </main>
         <audit-diff-dialog
-          .open=${this._isDiffOpen}
-          .path=${this._diffPath}
-          .versions=${this._diffVersions}
-          .requestedVersionId=${this._requestedDiffVersionId}
-          .org=${this._org}
-          .site=${this._site}
-          .token=${this._token}
+          .open=${s.isDiffOpen}
+          .path=${s.diffPath}
+          .versions=${s.diffVersions}
+          .requestedVersionId=${s.requestedDiffVersionId}
+          .fetchLatest=${this._session?.fetchDiffLatest}
+          .fetchVersion=${this._session?.fetchDiffVersion}
           @audit-close-diff=${this.handleCloseDiffDialog}
         ></audit-diff-dialog>
       </div>
@@ -505,25 +166,15 @@ if (!customElements.get(EL_NAME)) {
   customElements.define(EL_NAME, ContentAudit);
 }
 
-/**
- * Initializes the audit component.
- * @param {HTMLElement} el Container element.
- */
-export default async function init(el) {
-  el.replaceChildren();
-  const { token } = await DA_SDK;
-  const cmp = document.createElement(EL_NAME);
-  cmp._token = token;
-  el.append(cmp);
-}
-
 // Auto-initialize when script loads.
 (async () => {
   try {
     const main = document.querySelector('main');
-    if (main) {
-      await init(main);
-    }
+    if (!main) return;
+    const { token } = await DA_SDK;
+    const cmp = document.createElement(EL_NAME);
+    cmp.token = token;
+    main.replaceChildren(cmp);
   } catch (error) {
     console.error('Failed to initialize audit app:', error);
   }

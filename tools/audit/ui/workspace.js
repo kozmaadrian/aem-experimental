@@ -1,8 +1,8 @@
 import { html, LitElement } from 'https://da.live/nx/deps/lit/lit-core.min.js';
-import { pathForDisplay } from '../lib/audit-formatters.js';
+import { pathForDisplay } from '../core/formatters.js';
 import { iconRefresh } from '../../shared/components/icons/icons.js';
-import './audit-path-list.js';
-import './audit-detail-panel.js';
+import './path-list.js';
+import './detail-panel.js';
 
 const EL_NAME = 'audit-workspace';
 

@@ -1,7 +1,7 @@
 import { html, LitElement } from 'https://da.live/nx/deps/lit/lit-core.min.js';
-import { pathForDisplay } from '../lib/audit-formatters.js';
+import { pathForDisplay } from '../core/formatters.js';
 import { iconProgressCircle } from '../../shared/components/icons/icons.js';
-import './audit-timeline.js';
+import './timeline.js';
 
 const EL_NAME = 'audit-detail-panel';
 

@@ -5,7 +5,7 @@ import {
   actionPillVariant,
   formatEventKind,
   formatSmartTime,
-} from '../lib/audit-formatters.js';
+} from '../core/formatters.js';
 
 const EL_NAME = 'audit-timeline';
 

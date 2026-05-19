@@ -54,6 +54,7 @@ class SearchQueryHelp extends LitElement {
       <button
         type="button"
         class="search-query-help__trigger"
+        tabindex="-1"
         aria-expanded=${this.open ? 'true' : 'false'}
         aria-controls=${this._popoverId}
         aria-label="Search filter help"

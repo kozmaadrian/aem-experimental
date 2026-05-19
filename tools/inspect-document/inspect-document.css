@@ -1,0 +1,419 @@
+/*
+ * inspect-document styles. Mirrors content-transfer layout (shell + sticky header +
+ * split workspace). Field/button/switch styling comes from tool-base.css.
+ */
+
+:host {
+  --inspect-line: rgb(15 23 42 / 10%);
+  --inspect-line-2: rgb(15 23 42 / 16%);
+  --inspect-panel: #fff;
+  --inspect-panel-head: rgb(250 251 252 / 96%);
+  --inspect-muted: #64748b;
+  --inspect-radius: 14px;
+  --inspect-header-max: 1200px;
+  --inspect-control-height: var(--tool-control-height);
+
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  margin: 0;
+  font-family: inherit;
+}
+
+inspect-search-header,
+inspect-workspace,
+inspect-path-list {
+  display: block;
+  font-family: inherit;
+}
+
+inspect-source-panel,
+inspect-source-editor {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  font-family: inherit;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+.inspect-shell {
+  box-sizing: border-box;
+  height: 100%;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
+  font-family: inherit;
+}
+
+.inspect-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: #fff;
+}
+
+.header-inner {
+  max-width: var(--inspect-header-max);
+  margin: 0 auto;
+  padding: 0 0 16px;
+  display: grid;
+  gap: 14px;
+}
+
+.header-inner::after {
+  content: "";
+  display: block;
+  height: 1px;
+  width: min(88%, 1200px);
+  margin: 4px auto 0;
+  background: linear-gradient(
+    90deg,
+    rgb(15 23 42 / 0%) 0%,
+    rgb(15 23 42 / 8%) 18%,
+    rgb(15 23 42 / 10%) 50%,
+    rgb(15 23 42 / 8%) 82%,
+    rgb(15 23 42 / 0%) 100%
+  );
+  pointer-events: none;
+}
+
+.search-bar {
+  display: grid;
+  gap: 12px;
+  align-items: end;
+}
+
+.search-bar__field {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--s2-spacing-75);
+  min-width: 0;
+}
+
+.search-bar--full {
+  grid-template-columns:
+    minmax(96px, 1fr)
+    minmax(80px, 0.95fr)
+    minmax(160px, 2fr)
+    auto
+    minmax(96px, auto);
+  gap: 10px 12px;
+}
+
+.search-bar__submit {
+  min-width: 96px;
+}
+
+.search-bar__query,
+.field--query {
+  min-width: 0;
+}
+
+.inspect-main-area {
+  box-sizing: border-box;
+  max-width: var(--inspect-header-max);
+  width: 100%;
+  margin: 0 auto;
+  padding: 18px 0 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: stretch;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.inspect-main-area > inspect-workspace,
+.inspect-main-area > inspect-workspace .inspect-workspace {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.inspect-workspace__grid {
+  display: grid;
+  grid-template-columns: minmax(260px, 38%) minmax(320px, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  column-gap: 16px;
+  row-gap: 0;
+  align-items: stretch;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.inspect-workspace__cell--head-sidebar { grid-column: 1; grid-row: 1; }
+.inspect-workspace__cell--head-detail  { grid-column: 2; grid-row: 1; }
+.inspect-workspace__cell--body-sidebar { grid-column: 1; grid-row: 2; min-height: 0; }
+.inspect-workspace__cell--body-detail  { grid-column: 2; grid-row: 2; min-height: 0; }
+
+.inspect-pane {
+  padding: 5px;
+  background: var(--inspect-panel);
+  border: 1px solid var(--inspect-line);
+  border-radius: var(--inspect-radius);
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  font-family: inherit;
+}
+
+.inspect-pane--sidebar {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.inspect-workspace .inspect-workspace__cell--head-sidebar.panel-head,
+.inspect-workspace .inspect-workspace__cell--head-detail.panel-head {
+  padding: 12px 16px;
+  box-sizing: border-box;
+  height: 100%;
+  align-self: stretch;
+}
+
+.inspect-workspace__cell--head-sidebar.panel-head {
+  background: transparent;
+  align-items: center;
+}
+
+.inspect-workspace__cell--head-detail.panel-head {
+  border: 1px solid var(--inspect-line);
+  border-radius: var(--inspect-radius) var(--inspect-radius) 0 0;
+}
+
+.inspect-workspace .inspect-workspace__cell--body-detail.inspect-pane--detail {
+  border-top: none;
+  border-radius: 0 0 var(--inspect-radius) var(--inspect-radius);
+}
+
+.panel-head {
+  flex: 0 0 auto;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--inspect-line);
+  background: var(--inspect-panel-head);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.panel-head__title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #0f172a;
+  letter-spacing: 0.01em;
+}
+
+.panel-head__sub {
+  margin: 4px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--inspect-muted);
+  font-weight: 400;
+}
+
+.panel-head__sub code {
+  font-size: 12px;
+  word-break: break-all;
+}
+
+.panel-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  font-family: inherit;
+}
+
+.panel-scroll--sidebar {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+.panel-scroll--detail {
+  padding: 0;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.inspect-sidebar-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-family: inherit;
+}
+
+.inspect-sidebar-item {
+  margin: 0;
+}
+
+.inspect-path-row {
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 18px;
+  margin: 0;
+  border: none;
+  border-bottom: 1px solid var(--inspect-line);
+  border-radius: 0;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  transition: background 0.14s ease;
+}
+
+.inspect-path-row:hover {
+  background: rgb(38 128 235 / 6%);
+}
+
+.inspect-path-row:focus-visible {
+  outline: 2px solid #1473e6;
+  outline-offset: -2px;
+}
+
+.inspect-path-row.is-selected {
+  background: rgb(38 128 235 / 12%);
+}
+
+.inspect-path-row__primary {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.inspect-path-row__path {
+  min-width: 0;
+}
+
+.inspect-path-row__path code {
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.45;
+  color: #0f172a;
+  word-break: break-all;
+}
+
+.inspect-pane__empty {
+  margin: 12px 0;
+  padding: 12px 18px;
+  color: var(--inspect-muted);
+  font-size: 13px;
+  text-align: center;
+}
+
+.inspect-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.inspect-link:hover {
+  color: #0f172a;
+  text-decoration: underline;
+}
+
+.inspect-source-meta {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--inspect-line);
+  font-size: 12px;
+  color: var(--inspect-muted);
+}
+
+.inspect-source-meta__type {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.inspect-source-editor-wrap,
+.inspect-source-editor {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: #f8fafc;
+}
+
+.inspect-source-editor__host {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.inspect-source-editor__host .cm-editor {
+  height: 100%;
+}
+
+.inspect-source-editor__host .cm-focused {
+  outline: none;
+}
+
+.inspect-source-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 48px 24px;
+  text-align: center;
+}
+
+.inspect-source-state__figure {
+  width: 32px;
+  height: 32px;
+  color: var(--inspect-muted);
+}
+
+.inspect-source-state__message {
+  margin: 0;
+  font-size: 14px;
+  color: var(--inspect-muted);
+}
+
+.inspect-source-state--error .inspect-source-state__message {
+  color: #c0392b;
+}
+
+@media (max-width: 899px) {
+  .inspect-workspace__grid {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto minmax(200px, 35vh) minmax(280px, 1fr);
+  }
+
+  .inspect-workspace__cell--head-sidebar { grid-column: 1; grid-row: 1; }
+  .inspect-workspace__cell--head-detail  { grid-column: 1; grid-row: 2; }
+  .inspect-workspace__cell--body-sidebar { grid-column: 1; grid-row: 3; }
+  .inspect-workspace__cell--body-detail  { grid-column: 1; grid-row: 4; }
+}

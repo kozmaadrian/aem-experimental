@@ -128,8 +128,24 @@ body {
 
 @media (min-width: 640px) {
     .dashboard__grid {
-        /* Auto-fit as many ~288px cards as the viewport allows. */
-        grid-template-columns: repeat(auto-fill, minmax(240px, 288px));
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .spectrum-card {
+        max-width: none;
+        width: 100%;
+    }
+}
+
+@media (min-width: 900px) {
+    .dashboard__grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (min-width: 1200px) {
+    .dashboard__grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
     }
 }
 

@@ -666,16 +666,6 @@ class AuditDiffDialog extends LitElement {
             >
               <label class="audit-diff-dialog__field">
                 <div class="audit-diff-dialog__field-row">
-                  <button
-                    type="button"
-                    class="icon-tool-trigger audit-diff-step-trigger"
-                    title="Newer version"
-                    aria-label="Newer from version"
-                    ?disabled=${!canStepFromNewer}
-                    @click=${(event) => this.handleStepClick('left', -1, event)}
-                  >
-                    ${this.renderStepIcon('up')}
-                  </button>
                   <select
                     class="field"
                     aria-label="From version"
@@ -690,30 +680,32 @@ class AuditDiffDialog extends LitElement {
                       </option>
                     `)}
                   </select>
-                  <button
-                    type="button"
-                    class="icon-tool-trigger audit-diff-step-trigger"
-                    title="Older version"
-                    aria-label="Older from version"
-                    ?disabled=${!canStepFromOlder}
-                    @click=${(event) => this.handleStepClick('left', 1, event)}
-                  >
-                    ${this.renderStepIcon('down')}
-                  </button>
+                  <span class="audit-diff-dialog__step-group" role="group" aria-label="Step from version">
+                    <button
+                      type="button"
+                      class="icon-tool-trigger audit-diff-step-trigger"
+                      title="Newer version"
+                      aria-label="Newer from version"
+                      ?disabled=${!canStepFromNewer}
+                      @click=${(event) => this.handleStepClick('left', -1, event)}
+                    >
+                      ${this.renderStepIcon('up')}
+                    </button>
+                    <button
+                      type="button"
+                      class="icon-tool-trigger audit-diff-step-trigger"
+                      title="Older version"
+                      aria-label="Older from version"
+                      ?disabled=${!canStepFromOlder}
+                      @click=${(event) => this.handleStepClick('left', 1, event)}
+                    >
+                      ${this.renderStepIcon('down')}
+                    </button>
+                  </span>
                 </div>
               </label>
               <label class="audit-diff-dialog__field">
                 <div class="audit-diff-dialog__field-row">
-                  <button
-                    type="button"
-                    class="icon-tool-trigger audit-diff-step-trigger"
-                    title="Newer version"
-                    aria-label="Newer to version"
-                    ?disabled=${!canStepToNewer}
-                    @click=${(event) => this.handleStepClick('right', -1, event)}
-                  >
-                    ${this.renderStepIcon('up')}
-                  </button>
                   <select
                     class="field"
                     aria-label="To version"
@@ -728,16 +720,28 @@ class AuditDiffDialog extends LitElement {
                       </option>
                     `)}
                   </select>
-                  <button
-                    type="button"
-                    class="icon-tool-trigger audit-diff-step-trigger"
-                    title="Older version"
-                    aria-label="Older to version"
-                    ?disabled=${!canStepToOlder}
-                    @click=${(event) => this.handleStepClick('right', 1, event)}
-                  >
-                    ${this.renderStepIcon('down')}
-                  </button>
+                  <span class="audit-diff-dialog__step-group" role="group" aria-label="Step to version">
+                    <button
+                      type="button"
+                      class="icon-tool-trigger audit-diff-step-trigger"
+                      title="Newer version"
+                      aria-label="Newer to version"
+                      ?disabled=${!canStepToNewer}
+                      @click=${(event) => this.handleStepClick('right', -1, event)}
+                    >
+                      ${this.renderStepIcon('up')}
+                    </button>
+                    <button
+                      type="button"
+                      class="icon-tool-trigger audit-diff-step-trigger"
+                      title="Older version"
+                      aria-label="Older to version"
+                      ?disabled=${!canStepToOlder}
+                      @click=${(event) => this.handleStepClick('right', 1, event)}
+                    >
+                      ${this.renderStepIcon('down')}
+                    </button>
+                  </span>
                 </div>
               </label>
             </div>

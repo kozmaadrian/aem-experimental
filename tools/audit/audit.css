@@ -1176,6 +1176,14 @@ input[type="datetime-local"] {
 
 .audit-diff-dialog__field-row .field {
     flex: 1 1 auto;
+    min-width: 0;
+}
+
+.audit-diff-dialog__step-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
 }
 
 .audit-diff-step-trigger {

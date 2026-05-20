@@ -256,7 +256,7 @@ audit-detail-panel {
         minmax(80px, 0.95fr)
         minmax(140px, 2fr)
         auto
-        minmax(var(--audit-control-height), var(--audit-control-height));
+        auto;
     gap: 10px 12px;
 }
 
@@ -278,12 +278,44 @@ audit-detail-panel {
     white-space: nowrap;
 }
 
-/* Match search row / primary fields (not smaller icon-only toolbars). */
-.search-filters-trigger {
-    width: var(--audit-control-height);
-    min-width: var(--audit-control-height);
-    height: var(--audit-control-height);
-    border-radius: var(--s2-corner-radius-500);
+.search-filters-link {
+    align-self: end;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    box-sizing: border-box;
+    height: var(--tool-control-height);
+    min-height: var(--tool-control-height);
+    padding: 0;
+    margin: 0;
+    background: none;
+    border: none;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.2;
+    color: #64748b;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.search-filters-link:hover {
+    color: #0f172a;
+    text-decoration: underline;
+}
+
+.search-filters-link:focus-visible {
+    outline: 2px solid #1473e6;
+    outline-offset: 2px;
+    border-radius: 2px;
+}
+
+.search-filters-link__icon {
+    display: block;
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
 }
 
 /* Forms outside the header search bar (if any) */
@@ -291,7 +323,6 @@ input[type="text"],
 input[type="datetime-local"] {
     font-family: inherit;
 }
-
 
 .search-meta {
     margin: 0 0 8px;
@@ -917,7 +948,7 @@ input[type="datetime-local"] {
         justify-content: center;
     }
 
-    .search-filters-trigger {
+    .search-filters-link {
         grid-area: filter;
         justify-self: end;
     }
@@ -944,7 +975,7 @@ input[type="datetime-local"] {
         width: 100%;
     }
 
-    .search-filters-trigger {
+    .search-filters-link {
         justify-self: start;
     }
 

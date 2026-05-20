@@ -72,10 +72,6 @@ class AuditSearchHeader extends LitElement {
     this._filtersOpen = !this._filtersOpen;
   }
 
-  renderFilterIcon() {
-    return iconFilter({ className: 'icon-tool-trigger__icon' });
-  }
-
   render() {
     return html`
       <div class="header-inner">
@@ -136,14 +132,14 @@ class AuditSearchHeader extends LitElement {
             </button>
             <button
               type="button"
-              class="icon-tool-trigger search-filters-trigger"
+              class="search-filters-link"
               aria-expanded=${this._filtersOpen ? 'true' : 'false'}
               aria-controls="audit-search-filters"
-              title="Show or hide search filters (log preview/publish, date range)"
+              title="Show or hide log filters (preview/publish, date range)"
               @click=${this.toggleFiltersPanel}
             >
-              ${this.renderFilterIcon()}
-              <span class="visually-hidden">Filters</span>
+              ${iconFilter({ className: 'search-filters-link__icon' })}
+              <span>Filters</span>
             </button>
           </div>
 

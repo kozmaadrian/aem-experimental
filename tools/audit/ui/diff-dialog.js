@@ -554,6 +554,15 @@ class AuditDiffDialog extends LitElement {
     return iconChevronDown({ className: 'icon-tool-trigger__icon' });
   }
 
+  renderNoDiffState() {
+    return html`
+      <div class="audit-diff-state audit-diff-state--no-diff" role="status">
+        <p class="audit-diff-no-diff__title">No differences</p>
+        <p class="audit-diff-no-diff__hint">The content matches for the versions you chose.</p>
+      </div>
+    `;
+  }
+
   renderDiffBody() {
     if (this._isDiffLoading) {
       return html`
@@ -571,20 +580,12 @@ class AuditDiffDialog extends LitElement {
     }
 
     if (!this._diffChunks.length) {
-      return html`
-        <p class="audit-diff-message">
-          No differences between the selected versions.
-        </p>
-      `;
+      return this.renderNoDiffState();
     }
 
     const hasChanges = this._diffChunks.some((chunk) => chunk.type !== 'common');
     if (!hasChanges) {
-      return html`
-        <p class="audit-diff-message">
-          No differences between the selected versions.
-        </p>
-      `;
+      return this.renderNoDiffState();
     }
 
     return html`

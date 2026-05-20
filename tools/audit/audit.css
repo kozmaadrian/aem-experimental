@@ -1208,6 +1208,12 @@ input[type="datetime-local"] {
     background: #fff;
 }
 
+.audit-diff-dialog__body:has(.audit-diff-state) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 .audit-diff-state {
     display: flex;
     flex-direction: column;
@@ -1215,6 +1221,30 @@ input[type="datetime-local"] {
     justify-content: center;
     gap: 10px;
     min-height: 160px;
+}
+
+.audit-diff-state--no-diff {
+    gap: 8px;
+    max-width: 24rem;
+    padding: 0;
+}
+
+.audit-diff-no-diff__title {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1.35;
+    color: #0f172a;
+    text-align: center;
+}
+
+.audit-diff-no-diff__hint {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.5;
+    font-weight: 400;
+    color: var(--audit-muted);
+    text-align: center;
 }
 
 .audit-diff-message {

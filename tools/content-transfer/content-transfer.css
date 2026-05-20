@@ -128,7 +128,6 @@ transfer-target-panel {
     minmax(96px, 1fr)
     minmax(80px, 0.95fr)
     minmax(160px, 2fr)
-    auto
     minmax(96px, auto);
   gap: 10px 12px;
 }

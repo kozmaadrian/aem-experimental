@@ -118,7 +118,6 @@ class ContentTransfer extends LitElement {
             .org=${s.source.org}
             .site=${s.source.site}
             .searchTerm=${s.source.searchTerm}
-            .fullText=${s.source.fullText}
             .canSearch=${this._session.canSearch()}
           ></transfer-source-header>
         </header>

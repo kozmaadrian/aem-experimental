@@ -9,7 +9,6 @@ class AuditSearchHeader extends LitElement {
     org: { type: String },
     site: { type: String },
     searchTerm: { type: String },
-    fullTextSearch: { type: Boolean },
     logFrom: { type: String },
     logTo: { type: String },
     logFilterPreview: { type: Boolean },
@@ -23,7 +22,6 @@ class AuditSearchHeader extends LitElement {
     this.org = '';
     this.site = '';
     this.searchTerm = '';
-    this.fullTextSearch = false;
     this.logFrom = '';
     this.logTo = '';
     this.logFilterPreview = false;
@@ -53,12 +51,6 @@ class AuditSearchHeader extends LitElement {
     this.dispatchAuditEvent('audit-field-change', {
       field,
       value: event.target.value,
-    });
-  }
-
-  handleFullTextChange(event) {
-    this.dispatchAuditEvent('audit-full-text-change', {
-      value: Boolean(event?.target?.checked),
     });
   }
 
@@ -129,7 +121,7 @@ class AuditSearchHeader extends LitElement {
                 id="search-term"
                 name="searchTerm"
                 class="field field--query search-bar__query"
-                placeholder='e.g. /path/to/search or "keyword"'
+                placeholder='e.g. /drafts, hero, ~pricing'
                 .value=${this.searchTerm}
                 @input=${(event) => this.handleFieldInput('searchTerm', event)}
                 required
@@ -147,7 +139,7 @@ class AuditSearchHeader extends LitElement {
               class="icon-tool-trigger search-filters-trigger"
               aria-expanded=${this._filtersOpen ? 'true' : 'false'}
               aria-controls="audit-search-filters"
-              title="Show or hide search filters (full text, log preview/publish, date range)"
+              title="Show or hide search filters (log preview/publish, date range)"
               @click=${this.toggleFiltersPanel}
             >
               ${this.renderFilterIcon()}
@@ -161,22 +153,8 @@ class AuditSearchHeader extends LitElement {
             ?hidden=${!this._filtersOpen}
           >
             <div class="search-filters-panel__inner">
-              <label
-                class="switch-control search-filters-panel__item"
-                for="full-text-toggle"
-              >
-                <input
-                  type="checkbox"
-                  id="full-text-toggle"
-                  name="fullTextSearch"
-                  ?checked=${this.fullTextSearch}
-                  @change=${this.handleFullTextChange}
-                />
-                <span class="switch-slider" aria-hidden="true"></span>
-                <span class="switch-label">Full text</span>
-              </label>
               <div
-                class="search-filters-panel__group search-filters-panel__group--sep"
+                class="search-filters-panel__group"
                 role="group"
                 aria-label="Previewed and published in log"
               >

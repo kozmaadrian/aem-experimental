@@ -1,19 +1,29 @@
 /**
- * Parse and evaluate content-transfer / audit search query syntax.
+ * Parse and evaluate audit / content-transfer / inspect search query syntax.
  *
- *   KEY              path starts with KEY
- *   "KEY"            path contains KEY (full-text searches body for KEY)
- *   KEY1 "KEY2"      path starts with KEY1; full-text searches for KEY2 under KEY1
+ *   /path/to        path starts with this prefix (folder scope)
+ *   keyword         path or filename contains keyword (AND if several)
+ *   "phrase"        path contains phrase (spaces allowed)
+ *   ~keyword        document body contains keyword
+ *   ~"phrase"       document body contains phrase
  *
- * Multiple quoted segments are ANDed. Whitespace in the prefix is preserved (e.g.
- * `path/to/search "keyword"`).
+ * Examples: `/drafts`, `hero`, `/drafts ~pricing`, `~"call to action"`.
  */
 
-/** Matches a double-quoted phrase (no embedded quotes). */
-const QUOTED_PATTERN_RE = /"([^"]+)"/g;
+/** Path phrase in double quotes. */
+const QUOTED_PATH_RE = /"([^"]+)"/g;
+
+/** Body phrase: ~"…" */
+const TILDE_QUOTED_RE = /~"([^"]+)"/g;
+
+/** Body token: ~word */
+const TILDE_WORD_RE = /~(\S+)/g;
+
+/** Folder prefix token (starts with /). */
+const PREFIX_TOKEN_RE = /(?:^|\s)(\/\S+)/;
 
 /**
- * Short documentation sections for the search help popover (content-transfer + audit).
+ * Short documentation sections for the search help popover.
  *
  * @typedef {{ title: string, body: string, form?: string }} SearchQueryHelpSection
  */
@@ -22,28 +32,59 @@ const QUOTED_PATTERN_RE = /"([^"]+)"/g;
 export const SEARCH_QUERY_HELP_SECTIONS = [
   {
     title: 'Path prefix',
-    body: 'Limit results to a folder and everything beneath it. Enter a site path with or without a leading slash.',
-    form: '/path/to/search',
+    body: 'Limit results to a folder and everything beneath it. Start the token with a slash.',
+    form: '/drafts/blog',
   },
   {
-    title: 'Quoted phrase',
-    body: 'Match paths whose name contains the phrase. Wrap the text in double quotes.',
-    form: '"keyword"',
+    title: 'Path contains',
+    body: 'Match any part of the path or filename. Separate words are all required (AND).',
+    form: 'hero',
   },
   {
-    title: 'Prefix and phrase',
-    body: 'Combine both to filter by folder and by name in the path. Multiple quoted phrases are all required (AND).',
-    form: '/path/to/search "keyword"',
+    title: 'Path phrase',
+    body: 'Match a phrase inside the path or filename. Use quotes when the text has spaces.',
+    form: '"hero banner"',
   },
   {
-    title: 'Full text',
-    body: 'Enable Full text to search inside page content. Quoted phrases match the document body. Add a path prefix to search only under that folder; with no prefix, the whole site is searched.',
+    title: 'Body contains',
+    body: 'Search inside page source (HTML, JSON, etc.). Prefix with tilde. Use quotes for phrases with spaces.',
+    form: '~pricing',
+  },
+  {
+    title: 'Combine',
+    body: 'Mix prefix, path filters, and body filters. Example: search under /drafts for paths with "banner" and body text "free trial".',
+    form: '/drafts "banner" ~"free trial"',
   },
 ];
 
 /**
- * @typedef {{ prefix: string | null, patterns: string[], raw: string }} SearchQuery
+ * @typedef {{
+ *   prefix: string | null,
+ *   pathPatterns: string[],
+ *   contentPatterns: string[],
+ *   raw: string,
+ * }} SearchQuery
  */
+
+/**
+ * @param {RegExp} pattern
+ * @param {string} text
+ * @param {string[]} bucket
+ * @returns {string}
+ */
+function extractAll(pattern, text, bucket) {
+  let remainder = text;
+  pattern.lastIndex = 0;
+  let match = pattern.exec(remainder);
+  while (match) {
+    const piece = (match[1] ?? '').trim();
+    if (piece) bucket.push(piece);
+    remainder = `${remainder.slice(0, match.index)} ${remainder.slice(match.index + match[0].length)}`;
+    pattern.lastIndex = 0;
+    match = pattern.exec(remainder);
+  }
+  return remainder.replace(/\s+/g, ' ').trim();
+}
 
 /**
  * @param {string} raw
@@ -52,24 +93,57 @@ export const SEARCH_QUERY_HELP_SECTIONS = [
 export function parseSearchQuery(raw) {
   const term = (raw ?? '').trim();
   if (!term) {
-    return { prefix: null, patterns: [], raw: '' };
+    return {
+      prefix: null,
+      pathPatterns: [],
+      contentPatterns: [],
+      raw: '',
+    };
   }
 
-  const patterns = [];
-  QUOTED_PATTERN_RE.lastIndex = 0;
-  let match = QUOTED_PATTERN_RE.exec(term);
-  while (match) {
-    const piece = match[1].trim();
-    if (piece) patterns.push(piece);
-    match = QUOTED_PATTERN_RE.exec(term);
+  const pathPatterns = [];
+  const contentPatterns = [];
+
+  let remainder = extractAll(TILDE_QUOTED_RE, term, contentPatterns);
+  remainder = extractAll(QUOTED_PATH_RE, remainder, pathPatterns);
+  remainder = extractAll(TILDE_WORD_RE, remainder, contentPatterns);
+
+  let prefix = null;
+  const prefixMatch = remainder.match(PREFIX_TOKEN_RE);
+  if (prefixMatch) {
+    const rawPrefix = prefixMatch[1].replace(/^\/+/, '').replace(/\/+$/, '');
+    prefix = rawPrefix || null;
+    remainder = remainder.replace(prefixMatch[1], ' ').replace(/\s+/g, ' ').trim();
   }
 
-  const prefixPart = term.replace(QUOTED_PATTERN_RE, ' ').trim().replace(/\s+/g, ' ');
+  if (remainder) {
+    remainder.split(/\s+/).forEach((token) => {
+      const piece = token.trim();
+      if (piece) pathPatterns.push(piece);
+    });
+  }
+
   return {
-    prefix: prefixPart || null,
-    patterns,
+    prefix,
+    pathPatterns,
+    contentPatterns,
     raw: term,
   };
+}
+
+/**
+ * @param {SearchQuery} query
+ * @returns {boolean}
+ */
+export function isSearchQueryValid(query) {
+  return Boolean(
+    query?.raw?.trim()
+    && (
+      query.prefix
+      || query.pathPatterns.length > 0
+      || query.contentPatterns.length > 0
+    ),
+  );
 }
 
 /**
@@ -114,43 +188,23 @@ export function matchesPathScope(normalizedPath, query) {
 }
 
 /**
- * Path/filename contains all quoted patterns (used for path-only search).
- *
  * @param {string} normalizedPath
  * @param {string} filename
  * @param {SearchQuery} query
  */
 export function matchesPathPatterns(normalizedPath, filename, query) {
-  if (!query.patterns.length) return false;
-  return query.patterns.every(
+  if (!query.pathPatterns.length) return false;
+  return query.pathPatterns.every(
     (pattern) => textContains(normalizedPath, pattern) || textContains(filename, pattern),
   );
 }
 
 /**
- * @param {string} normalizedPath
- * @param {string} filename
- * @param {SearchQuery} query
- */
-export function matchesPathQuery(normalizedPath, filename, query) {
-  if (!matchesPathScope(normalizedPath, query)) return false;
-
-  if (query.patterns.length > 0) {
-    return matchesPathPatterns(normalizedPath, filename, query);
-  }
-
-  return Boolean(query.prefix);
-}
-
-/**
- * Needles used when scanning file source (full-text mode). Only quoted segments
- * are searched in document bodies; a bare prefix scopes the tree only.
- *
  * @param {SearchQuery} query
  * @returns {string[]}
  */
 export function contentSearchNeedles(query) {
-  return query.patterns;
+  return query.contentPatterns;
 }
 
 /**
@@ -160,12 +214,40 @@ export function contentSearchNeedles(query) {
 export function matchesContentQuery(sourceText, query) {
   const needles = contentSearchNeedles(query);
   if (!needles.length) return false;
-  return needles.every((needle) => textContains(sourceText, needle));
+  const src = typeof sourceText === 'string' ? sourceText : '';
+  return needles.every((needle) => textContains(src, needle));
 }
 
 /**
- * BFS listing seeds: scope traversal to a path prefix when set.
- *
+ * @param {string} normalizedPath
+ * @param {string} filename
+ * @param {string} sourceText
+ * @param {SearchQuery} query
+ */
+export function matchesFileQuery(normalizedPath, filename, sourceText, query) {
+  if (!query.raw) return false;
+  if (!matchesPathScope(normalizedPath, query)) return false;
+
+  const hasPath = query.pathPatterns.length > 0;
+  const hasContent = query.contentPatterns.length > 0;
+  const prefixOnly = Boolean(query.prefix) && !hasPath && !hasContent;
+
+  if (hasContent && !matchesContentQuery(sourceText, query)) return false;
+  if (hasPath && !matchesPathPatterns(normalizedPath, filename, query)) return false;
+
+  return prefixOnly || hasPath || hasContent;
+}
+
+/**
+ * @param {string} normalizedPath
+ * @param {string} filename
+ * @param {SearchQuery} query
+ */
+export function matchesPathQuery(normalizedPath, filename, query) {
+  return matchesFileQuery(normalizedPath, filename, '', query);
+}
+
+/**
  * @param {SearchQuery} query
  * @param {string[]} hiddenRoots
  * @returns {string[]}

@@ -66,7 +66,6 @@ class InspectDocument extends LitElement {
             .org=${s.org}
             .site=${s.site}
             .searchTerm=${s.searchTerm}
-            .fullText=${s.fullText}
             .canSearch=${this._session.canSearch()}
           ></inspect-search-header>
         </header>

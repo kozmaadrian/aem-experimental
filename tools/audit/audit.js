@@ -42,13 +42,6 @@ class ContentAudit extends LitElement {
     this._session.setField(field, value);
   }
 
-  handleFullTextChange(event) {
-    const nextValue = typeof event?.detail?.value === 'boolean'
-      ? event.detail.value
-      : !this._snapshot.fullTextSearch;
-    this._session.setField('fullTextSearch', nextValue);
-  }
-
   async handleSearchSubmit() {
     await this._session.executeSearch();
   }
@@ -132,14 +125,12 @@ class ContentAudit extends LitElement {
             .org=${s.org}
             .site=${s.site}
             .searchTerm=${s.searchTerm}
-            .fullTextSearch=${s.fullTextSearch}
             .logFrom=${s.logFrom}
             .logTo=${s.logTo}
             .logFilterPreview=${s.logFilterPreview}
             .logFilterLive=${s.logFilterLive}
             .canSearch=${this._session?.canSearch() ?? false}
             @audit-field-change=${this.handleFieldChangeEvent}
-            @audit-full-text-change=${this.handleFullTextChange}
             @audit-search-submit=${this.handleSearchSubmit}
           ></audit-search-header>
         </header>

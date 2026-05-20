@@ -5,9 +5,10 @@
  * workers matching the query against path/filename and (optionally) source text.
  *
  * Query syntax (see `search-query.js`):
- *   KEY              → path starts with KEY
- *   "KEY"            → path contains KEY (or body when full-text is on)
- *   KEY1 "KEY2"      → path starts with KEY1; body/path match for KEY2
+ *   /path            → path starts with prefix
+ *   keyword          → path/filename contains
+ *   "phrase"         → path contains phrase
+ *   ~keyword         → body contains
  */
 
 import {
@@ -21,9 +22,9 @@ import {
 } from './paths.js';
 import {
   parseSearchQuery,
+  isSearchQueryValid,
   matchesPathScope,
-  matchesPathQuery,
-  matchesContentQuery,
+  matchesFileQuery,
   contentSearchNeedles,
   listSeedDirectories,
 } from './search-query.js';
@@ -46,17 +47,15 @@ export async function searchContentPaths(org, site, term, token, options = {}) {
   if (!term?.trim()) return { success: false, error: 'Search term is required' };
 
   const query = parseSearchQuery(term);
-  if (!query.prefix && query.patterns.length === 0) {
+  if (!isSearchQueryValid(query)) {
     return { success: false, error: 'Search term is required' };
   }
 
-  const fullTextSearch = options.fullTextSearch !== false;
   const maxResults = Number.isFinite(options.maxResults) ? options.maxResults : 100;
   const maxFiles = Number.isFinite(options.maxFiles) ? options.maxFiles : 500;
   const concurrency = Number.isFinite(options.concurrency) ? options.concurrency : 8;
   const hiddenRoots = Array.isArray(options.hiddenRoots) ? options.hiddenRoots : [];
-  const contentNeedles = contentSearchNeedles(query);
-  const searchSourceText = fullTextSearch && contentNeedles.length > 0;
+  const searchSourceText = contentSearchNeedles(query).length > 0;
 
   const directories = listSeedDirectories(query, hiddenRoots);
   const visitedDirectories = new Set(directories);
@@ -118,17 +117,16 @@ export async function searchContentPaths(org, site, term, token, options = {}) {
       const filename = filePath.split('/').pop() || '';
       if (!matchesPathScope(normalizedPath, query)) continue;
 
-      let matched = false;
+      let sourceText = '';
       if (searchSourceText) {
         try {
-          const sourceText = await fetchText(`${ADMIN_DA_LIVE_URL}/source${filePath}`, token);
-          matched = matchesContentQuery(sourceText, query);
+          sourceText = await fetchText(`${ADMIN_DA_LIVE_URL}/source${filePath}`, token);
         } catch {
-          matched = false;
+          // eslint-disable-next-line no-continue
+          continue;
         }
-      } else {
-        matched = matchesPathQuery(normalizedPath, filename, query);
       }
+      const matched = matchesFileQuery(normalizedPath, filename, sourceText, query);
 
       if (matched) {
         dedupedPaths.add(normalizedPath);

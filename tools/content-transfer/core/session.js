@@ -34,7 +34,6 @@ function initialState() {
       org: '',
       site: '',
       searchTerm: '',
-      fullText: false,
       isSearching: false,
       results: [], // [{ path, lastModified }]
       meta: null, // { matches, scanned, durationMs }
@@ -86,9 +85,6 @@ export function createCopySession({
       setSource({ searchTerm: typeof value === 'string' ? value : '' });
       return;
     }
-    if (field === 'fullText') {
-      setSource({ fullText: Boolean(value) });
-    }
   }
 
   function canSearch() {
@@ -103,7 +99,7 @@ export function createCopySession({
 
   async function search() {
     const {
-      org, site, searchTerm, fullText,
+      org, site, searchTerm,
     } = current.source;
     if (!org?.trim() || !site?.trim() || !searchTerm?.trim()) return;
 
@@ -115,7 +111,6 @@ export function createCopySession({
     let result;
     try {
       result = await io.searchPaths(org, site, searchTerm, {
-        fullTextSearch: fullText,
         maxResults: 150,
         maxFiles: 1000,
         concurrency: 8,

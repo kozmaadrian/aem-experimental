@@ -3,99 +3,158 @@ import { describe, it } from 'node:test';
 
 import {
   parseSearchQuery,
+  isSearchQueryValid,
   pathStartsWithPrefix,
   matchesPathScope,
   matchesPathQuery,
+  matchesFileQuery,
   matchesContentQuery,
   contentSearchNeedles,
   listSeedDirectories,
 } from './search-query.js';
 
 describe('parseSearchQuery', () => {
-  it('parses starts-with term', () => {
-    assert.deepEqual(parseSearchQuery('drafts'), {
+  it('parses path prefix', () => {
+    assert.deepEqual(parseSearchQuery('/drafts'), {
       prefix: 'drafts',
-      patterns: [],
-      raw: 'drafts',
+      pathPatterns: [],
+      contentPatterns: [],
+      raw: '/drafts',
     });
   });
 
-  it('parses quoted contains pattern', () => {
-    assert.deepEqual(parseSearchQuery('"hero"'), {
+  it('parses bare path contains token', () => {
+    assert.deepEqual(parseSearchQuery('hero'), {
       prefix: null,
-      patterns: ['hero'],
-      raw: '"hero"',
+      pathPatterns: ['hero'],
+      contentPatterns: [],
+      raw: 'hero',
     });
   });
 
-  it('parses combined prefix and quoted pattern', () => {
-    assert.deepEqual(parseSearchQuery('drafts "hero"'), {
-      prefix: 'drafts',
-      patterns: ['hero'],
-      raw: 'drafts "hero"',
+  it('parses quoted path phrase', () => {
+    assert.deepEqual(parseSearchQuery('"hero banner"'), {
+      prefix: null,
+      pathPatterns: ['hero banner'],
+      contentPatterns: [],
+      raw: '"hero banner"',
     });
   });
 
-  it('parses multi-segment prefix with quoted pattern', () => {
-    assert.deepEqual(parseSearchQuery('drafts/blog "hero"'), {
+  it('parses body token and quoted body phrase', () => {
+    const q = parseSearchQuery('~pricing ~"call to action"');
+    assert.equal(q.prefix, null);
+    assert.deepEqual(q.pathPatterns, []);
+    assert.deepEqual(q.contentPatterns.sort(), ['call to action', 'pricing'].sort());
+    assert.equal(q.raw, '~pricing ~"call to action"');
+  });
+
+  it('parses combined prefix, path, and body', () => {
+    assert.deepEqual(parseSearchQuery('/drafts/blog hero ~pricing'), {
       prefix: 'drafts/blog',
-      patterns: ['hero'],
-      raw: 'drafts/blog "hero"',
+      pathPatterns: ['hero'],
+      contentPatterns: ['pricing'],
+      raw: '/drafts/blog hero ~pricing',
     });
   });
 
-  it('parses multiple quoted patterns', () => {
-    assert.deepEqual(parseSearchQuery('"foo" "bar"'), {
+  it('parses multiple path contains tokens as AND', () => {
+    assert.deepEqual(parseSearchQuery('hero banner'), {
       prefix: null,
-      patterns: ['foo', 'bar'],
-      raw: '"foo" "bar"',
+      pathPatterns: ['hero', 'banner'],
+      contentPatterns: [],
+      raw: 'hero banner',
     });
   });
 });
 
+describe('isSearchQueryValid', () => {
+  it('rejects empty query', () => {
+    assert.equal(isSearchQueryValid(parseSearchQuery('')), false);
+  });
+
+  it('accepts prefix-only', () => {
+    assert.equal(isSearchQueryValid(parseSearchQuery('/drafts')), true);
+  });
+
+  it('accepts body-only', () => {
+    assert.equal(isSearchQueryValid(parseSearchQuery('~hero')), true);
+  });
+});
+
 describe('matchesPathQuery', () => {
-  it('matches starts-with only', () => {
-    const q = parseSearchQuery('drafts');
+  it('matches prefix only under folder', () => {
+    const q = parseSearchQuery('/drafts');
     assert.equal(matchesPathQuery('/drafts/a.html', 'a.html', q), true);
     assert.equal(matchesPathQuery('/drafts', 'drafts', q), true);
     assert.equal(matchesPathQuery('/other/drafts.html', 'drafts.html', q), false);
   });
 
-  it('matches quoted contains pattern only', () => {
+  it('matches bare contains anywhere in path', () => {
+    const q = parseSearchQuery('drafts');
+    assert.equal(matchesPathQuery('/marketing/drafts/foo.html', 'foo.html', q), true);
+    assert.equal(matchesPathQuery('/pages/about.html', 'about.html', q), false);
+  });
+
+  it('matches quoted path phrase', () => {
     const q = parseSearchQuery('"hero"');
     assert.equal(matchesPathQuery('/pages/hero-banner.html', 'hero-banner.html', q), true);
     assert.equal(matchesPathQuery('/pages/about.html', 'about.html', q), false);
   });
 
-  it('matches combined prefix and quoted pattern', () => {
-    const q = parseSearchQuery('drafts "hero"');
+  it('matches combined prefix and path contains', () => {
+    const q = parseSearchQuery('/drafts hero');
     assert.equal(matchesPathQuery('/drafts/hero.html', 'hero.html', q), true);
     assert.equal(matchesPathQuery('/drafts/about.html', 'about.html', q), false);
     assert.equal(matchesPathQuery('/pages/hero.html', 'hero.html', q), false);
   });
 });
 
+describe('matchesFileQuery', () => {
+  it('matches body needle only', () => {
+    const q = parseSearchQuery('~pricing');
+    assert.equal(matchesFileQuery('/any/page.html', 'page.html', '<p>Our pricing</p>', q), true);
+    assert.equal(matchesFileQuery('/any/page.html', 'page.html', '<p>other</p>', q), false);
+  });
+
+  it('matches prefix, path, and body together', () => {
+    const q = parseSearchQuery('/drafts hero ~pricing');
+    assert.equal(
+      matchesFileQuery('/drafts/hero.html', 'hero.html', '<p>pricing</p>', q),
+      true,
+    );
+    assert.equal(
+      matchesFileQuery('/drafts/hero.html', 'hero.html', '<p>nope</p>', q),
+      false,
+    );
+    assert.equal(
+      matchesFileQuery('/pages/hero.html', 'hero.html', '<p>pricing</p>', q),
+      false,
+    );
+  });
+});
+
 describe('matchesContentQuery', () => {
-  it('uses quoted pattern for full text when combined', () => {
-    const q = parseSearchQuery('drafts "pricing"');
+  it('uses tilde patterns for body', () => {
+    const q = parseSearchQuery('/drafts ~pricing');
     assert.equal(matchesContentQuery('<p>Our pricing</p>', q), true);
     assert.equal(matchesContentQuery('<p>drafts only</p>', q), false);
   });
 
-  it('does not search body without a quoted segment', () => {
-    const q = parseSearchQuery('drafts');
+  it('returns no body needles without tilde', () => {
+    const q = parseSearchQuery('/drafts');
     assert.deepEqual(contentSearchNeedles(q), []);
   });
 });
 
 describe('listSeedDirectories', () => {
-  it('scopes listing to prefix directory', () => {
-    const q = parseSearchQuery('drafts/blog');
+  it('scopes listing to slash prefix', () => {
+    const q = parseSearchQuery('/drafts/blog');
     assert.deepEqual(listSeedDirectories(q, ['.da']), ['drafts/blog']);
   });
 
-  it('includes hidden roots at site root when no prefix', () => {
-    const q = parseSearchQuery('"hero"');
+  it('includes hidden roots at site root when no slash prefix', () => {
+    const q = parseSearchQuery('~hero');
     assert.deepEqual(listSeedDirectories(q, ['.da']), ['', '.da']);
   });
 });
@@ -107,13 +166,13 @@ describe('pathStartsWithPrefix', () => {
 });
 
 describe('matchesPathScope', () => {
-  it('allows any path when only a quoted pattern is used (full-text scope)', () => {
-    const q = parseSearchQuery('"Adrian"');
+  it('allows any path when only a body pattern is used', () => {
+    const q = parseSearchQuery('~Adrian');
     assert.equal(matchesPathScope('/pages/about.html', q), true);
   });
 
   it('restricts to prefix folder for combined queries', () => {
-    const q = parseSearchQuery('drafts "Adrian"');
+    const q = parseSearchQuery('/drafts ~Adrian');
     assert.equal(matchesPathScope('/drafts/a.html', q), true);
     assert.equal(matchesPathScope('/pages/a.html', q), false);
   });

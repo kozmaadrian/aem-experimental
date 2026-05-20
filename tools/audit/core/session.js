@@ -51,7 +51,6 @@ function initialState() {
     expandedPath: '',
     auditByPath: {},
     isSearching: false,
-    fullTextSearch: false,
     logFrom: logRange.from,
     logTo: logRange.to,
     logFilterPreview: false,
@@ -100,7 +99,7 @@ export function createAuditSession({ io, onChange = () => {}, notify = () => {} 
       set({ [field]: typeof value === 'string' ? value : '' });
       return;
     }
-    if (field === 'logFilterPreview' || field === 'logFilterLive' || field === 'fullTextSearch') {
+    if (field === 'logFilterPreview' || field === 'logFilterLive') {
       set({ [field]: Boolean(value) });
     }
   }
@@ -125,7 +124,7 @@ export function createAuditSession({ io, onChange = () => {}, notify = () => {} 
     const useLogFilter = Boolean(state.logFilterPreview || state.logFilterLive);
     // Capture identity fields once; they don't change during a search.
     const {
-      org, site, fullTextSearch, logFilterPreview, logFilterLive,
+      org, site, logFilterPreview, logFilterLive,
     } = state;
 
     if (useLogFilter) {
@@ -163,7 +162,6 @@ export function createAuditSession({ io, onChange = () => {}, notify = () => {} 
     let result;
     try {
       result = await io.searchPaths(org, site, term, {
-        fullTextSearch,
         maxResults: 150,
         maxFiles: 1000,
         concurrency: 8,

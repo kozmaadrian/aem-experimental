@@ -8,7 +8,6 @@ class InspectSearchHeader extends LitElement {
     org: { type: String },
     site: { type: String },
     searchTerm: { type: String },
-    fullText: { type: Boolean },
     canSearch: { type: Boolean },
   };
 
@@ -17,7 +16,6 @@ class InspectSearchHeader extends LitElement {
     this.org = '';
     this.site = '';
     this.searchTerm = '';
-    this.fullText = false;
     this.canSearch = false;
   }
 
@@ -26,14 +24,6 @@ class InspectSearchHeader extends LitElement {
   dispatchField(field, event) {
     this.dispatchEvent(new CustomEvent('inspect-field-change', {
       detail: { field, value: event.target.value },
-      bubbles: true,
-      composed: true,
-    }));
-  }
-
-  handleFullText(event) {
-    this.dispatchEvent(new CustomEvent('inspect-field-change', {
-      detail: { field: 'fullText', value: event.target.checked },
       bubbles: true,
       composed: true,
     }));
@@ -89,20 +79,11 @@ class InspectSearchHeader extends LitElement {
               type="text"
               id="inspect-term"
               class="field field--query search-bar__query"
-              placeholder='e.g. /path/to/search or "keyword"'
+              placeholder='e.g. /drafts, hero, ~pricing'
               .value=${this.searchTerm}
               @input=${(e) => this.dispatchField('searchTerm', e)}
               required
             />
-          </label>
-          <label class="switch-control" style="align-self: end; padding-bottom: 8px;">
-            <input
-              type="checkbox"
-              .checked=${this.fullText}
-              @change=${this.handleFullText}
-            />
-            <span class="switch-slider" aria-hidden="true"></span>
-            <span class="switch-label">Full text</span>
           </label>
           <button
             type="submit"

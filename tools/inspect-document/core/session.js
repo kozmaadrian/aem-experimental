@@ -9,7 +9,6 @@ function initialState() {
     org: '',
     site: '',
     searchTerm: '',
-    fullText: false,
     isSearching: false,
     results: [],
     meta: null,
@@ -51,9 +50,6 @@ export function createInspectSession({
     if (field === 'searchTerm') {
       set({ searchTerm: typeof value === 'string' ? value : '' });
       return;
-    }
-    if (field === 'fullText') {
-      set({ fullText: Boolean(value) });
     }
   }
 
@@ -114,7 +110,7 @@ export function createInspectSession({
 
   async function search() {
     const {
-      org, site, searchTerm, fullText,
+      org, site, searchTerm,
     } = current;
     if (!org?.trim() || !site?.trim() || !searchTerm?.trim()) return;
 
@@ -132,7 +128,6 @@ export function createInspectSession({
     let result;
     try {
       result = await io.searchPaths(org, site, searchTerm, {
-        fullTextSearch: fullText,
         maxResults: 150,
         maxFiles: 1000,
         concurrency: 8,
